@@ -118,6 +118,16 @@ Tests live beside the code they cover (`*_test.go`). Test layers in
 isolation: service tests fake the usecase, biz tests fake the repo, data
 tests exercise repo implementations at the storage boundary.
 
+## Workflow
+
+- Subagents edit and commit only in their task's own worktree; never touch
+  the main worktree or its git index.
+- Subagents that write code run `go vet` on the packages they changed (plus
+  `go test` when the package has tests) before reporting done.
+- Gate before handoff: `go build ./... && go vet ./...`. When touching
+  `api/`, `internal/conf/`, `internal/data/ent/schema/`, or Wire providers,
+  also run `make all` then `git diff --exit-code` to catch generated drift.
+
 ## Generation & generated files
 
 Regenerate via `make api`, `make config`, or `make all`; never hand-edit
