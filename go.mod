@@ -20,7 +20,6 @@ require (
 	github.com/rabbitmq/amqp091-go v1.11.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.45.0
 	github.com/testcontainers/testcontainers-go/modules/rabbitmq v0.45.0
-	go.einride.tech/aip v0.86.3
 	go.opentelemetry.io/otel/exporters/prometheus v0.69.0
 	go.opentelemetry.io/otel/sdk/metric v1.47.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20261110000943-09e21b237f2c

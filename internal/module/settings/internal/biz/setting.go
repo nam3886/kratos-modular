@@ -35,7 +35,11 @@ func NewSettingUsecase(repo SettingRepo) *SettingUsecase {
 }
 
 func (uc *SettingUsecase) Get(ctx context.Context, currency string) (*Setting, error) {
-	return uc.repo.Find(ctx, strings.ToUpper(currency))
+	currency = strings.ToUpper(currency)
+	if len(currency) != 3 {
+		return nil, ErrSettingCurrencyInvalid
+	}
+	return uc.repo.Find(ctx, currency)
 }
 
 func (uc *SettingUsecase) Update(ctx context.Context, s *Setting) (*Setting, error) {

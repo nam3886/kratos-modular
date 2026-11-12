@@ -19,7 +19,7 @@ Spec này viết cho người (hoặc AI) triển khai chưa biết gì về qu�
 
 | Nhóm | Tính năng |
 | --- | --- |
-| API | Proto-first; một service cho cả HTTP và gRPC; OpenAPI sinh tự động; JSON khớp OpenAPI; mã lỗi khai báo trong proto; kiểm tra trường bắt buộc |
+| API | Proto-first; một service cho cả HTTP và gRPC; OpenAPI sinh tự động; JSON khớp OpenAPI; mã lỗi khai báo trong proto; mọi kiểm tra đầu vào (kể cả trường thiếu hoặc bằng 0) nằm ở `biz` và trả đúng reason cụ thể |
 | Module | Mỗi module ba tầng `service`, `biz`, `data` sau `internal/` riêng; Wire riêng từng module; tự đăng ký HTTP, gRPC, consumer |
 | Tương tác | Gọi trực tiếp một chiều qua interface sinh từ proto; chiều ngược lại bằng event |
 | Dữ liệu | Ent + PostgreSQL; n database khai báo trong config, mỗi database một pool dùng chung; mỗi module một client Ent; migration có phiên bản |
@@ -51,7 +51,6 @@ Dùng đúng các phiên bản dưới đây cho thư viện trực tiếp; đâ
 | `github.com/prometheus/client_golang` | v1.24.1 | Endpoint `/metrics` |
 | `go.opentelemetry.io/otel/exporters/prometheus` | v0.69.0 | Đưa metrics OpenTelemetry sang Prometheus |
 | `go.opentelemetry.io/otel/sdk/metric` | v1.47.0 | MeterProvider |
-| `go.einride.tech/aip` | v0.86.3 | Kiểm tra `field_behavior = REQUIRED` |
 | `google.golang.org/grpc` | v1.85.0 | gRPC |
 | `google.golang.org/protobuf` | v1.36.12 | Protobuf, protojson |
 | `github.com/testcontainers/testcontainers-go/modules/postgres` | v0.45.0 | PostgreSQL cho test |
@@ -190,7 +189,7 @@ payment/data     settings_client.go cài LimitReader, giữ settingsv1.SettingsS
 settings/service → settings/biz → settings/data
 ```
 
-Lời gọi trong process không đi qua middleware của transport (recovery, validate, metrics).
+Lời gọi trong process không đi qua middleware của transport (recovery, metrics, hideInternal).
 
 **Đường đi của một event** (settings báo cho payment):
 
@@ -616,7 +615,7 @@ type Consumer interface {
 **`http.go`** — `func NewHTTPServer(c *conf.Server, m *Metrics, modules []Registrar) *http.Server`
 
 - Filter (chạy trước khi giải mã): luôn có `bodyLimit(c.GetHttp().GetMaxBodyBytes())`; thêm `cors(c.GetHttp().GetCorsAllowedOrigins())` khi danh sách khác rỗng. Truyền bằng `http.Filter(filters...)`.
-- Middleware theo thứ tự: `recovery.Recovery()`, `m.middleware` (metrics), `hideInternal`, `validate.Validator(...)` gọi `fieldbehavior.ValidateRequiredFields(msg)` của `go.einride.tech/aip/fieldbehavior` khi request là `proto.Message`.
+- Middleware theo thứ tự: `recovery.Recovery()`, `m.middleware` (metrics), `hideInternal`. Không có validator ở tầng transport: `biz` kiểm tra và trả reason cụ thể.
 - Áp `Network`, `Address`, `Timeout` từ config khi có giá trị.
 - **`errors.go`**: `hideInternal` là middleware dùng chung cho HTTP và gRPC: lỗi không phải `*errors.Error` của Kratos được ghi log đầy đủ (`slog.ErrorContext`) rồi trả `errors.InternalServer("INTERNAL", "internal error")`; lỗi Kratos đi qua nguyên vẹn. Có một test đơn vị.
 - Sau `http.NewServer(opts...)`: `srv.Handle("/metrics", m.handler)`, rồi gọi `RegisterHTTP` của từng module.
@@ -1450,7 +1449,7 @@ Bản triển khai chỉ được coi là xong khi mọi mục dưới đây đ�
 - [ ] `POST /v1/payments` với `{"amount":"500","currency":"usd"}` → 200, `currency` là `USD`, `status` là `pending`
 - [ ] `POST /v1/payments` số tiền 5000 → 400, `reason` là `PAYMENT_LIMIT_EXCEEDED`
 - [ ] `POST /v1/payments` loại tiền chưa có setting → 400, message "currency is not supported"
-- [ ] `POST /v1/payments` thiếu `amount` → 400, `reason` là `VALIDATOR`
+- [ ] `POST /v1/payments` thiếu `amount` → 400, `reason` là `PAYMENT_AMOUNT_INVALID`; thiếu `currency` → `PAYMENT_CURRENCY_INVALID`
 - [ ] `GET /v1/payments/{id}` → 200
 - [ ] Gọi `PaymentService.CreatePayment` qua gRPC cổng 9000 → thành công; vượt hạn mức trả `InvalidArgument`
 - [ ] Sau mỗi lần cập nhật setting, bảng `limit_changes` và `inbox` tăng 1 dòng trong vài giây, `watermill_outbox` về 0
@@ -1516,7 +1515,7 @@ Những thứ dưới đây đã được cân nhắc và cố ý không làm. �
 | Cron job | Chưa có job cụ thể; cần quyết định cơ chế khóa khi chạy nhiều bản |
 | Tách command/query, repository in-memory, kho event, seeder | Không cần ở quy mô module mẫu |
 | Sinh mock (Mockery, gomock) | Bản giả viết tay ngắn hơn |
-| Validation bằng protovalidate | Kiểm tra trường bắt buộc cộng luật trong `biz` là đủ |
+| Validation bằng protovalidate hoặc validator ở transport | Kiểm tra trong `biz` là đủ và cho reason cụ thể; `field_behavior = REQUIRED` chỉ để tài liệu OpenAPI |
 | Swagger UI | File `openapi.yaml` mở được bằng công cụ ngoài |
 | Package dịch lỗi database dùng chung | Dùng `ent.IsNotFound`, `ent.IsConstraintError` tại repository |
 | File ghi quyết định kiến trúc, thư mục `docs/` | README đã ghi các quy tắc |

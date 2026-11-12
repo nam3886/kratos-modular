@@ -37,6 +37,9 @@ func TestUpdateThenGet(t *testing.T) {
 	if _, err := uc.Get(ctx, "EUR"); !errors.Is(err, ErrSettingNotFound) {
 		t.Fatalf("missing currency: %v", err)
 	}
+	if _, err := uc.Get(ctx, ""); !errors.Is(err, ErrSettingCurrencyInvalid) {
+		t.Fatalf("empty currency: %v", err)
+	}
 }
 
 func TestUpdateRejectsInvalidSettings(t *testing.T) {
