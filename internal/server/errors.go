@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-kratos/kratos/v3/errors"
 	"github.com/go-kratos/kratos/v3/middleware"
+	"github.com/go-kratos/kratos/v3/transport"
 )
 
 // hideInternal logs any error that is not a Kratos error and replies with a
@@ -20,7 +21,11 @@ func hideInternal(next middleware.Handler) middleware.Handler {
 		if errors.As(err, &ke) {
 			return reply, err
 		}
-		slog.ErrorContext(ctx, "internal error", "error", err)
+		var op string
+		if tr, ok := transport.FromServerContext(ctx); ok {
+			op = tr.Operation()
+		}
+		slog.ErrorContext(ctx, "internal error", "operation", op, "error", err)
 		return nil, errors.InternalServer("INTERNAL", "internal error")
 	}
 }
