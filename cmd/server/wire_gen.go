@@ -41,7 +41,7 @@ func wireApp(confServer *conf.Server, data *conf.Data, logger *slog.Logger) (*kr
 	}
 	v := registrars(module, paymentModule)
 	grpcServer := server.NewGRPCServer(confServer, metrics, v)
-	httpServer := server.NewHTTPServer(confServer, metrics, v)
+	httpServer := server.NewHTTPServer(confServer, logger, metrics, manager, v)
 	mqMQ, cleanup2, err := mq.New(data, manager, logger)
 	if err != nil {
 		cleanup()
