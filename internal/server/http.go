@@ -30,6 +30,7 @@ func NewHTTPServer(c *conf.Server, m *Metrics, modules []Registrar) *http.Server
 		http.Middleware(
 			recovery.Recovery(),
 			m.middleware,
+			hideInternal,
 			validate.Validator(func(req any) error {
 				if msg, ok := req.(proto.Message); ok {
 					return fieldbehavior.ValidateRequiredFields(msg)

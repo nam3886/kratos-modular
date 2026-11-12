@@ -7,6 +7,7 @@ import (
 	v1 "github.com/nam3886/kratos-modular/api/settings/v1"
 	"github.com/nam3886/kratos-modular/internal/module/settings/internal/biz"
 	"github.com/nam3886/kratos-modular/internal/module/settings/internal/data/ent"
+	"github.com/nam3886/kratos-modular/internal/module/settings/internal/data/ent/setting"
 	"github.com/nam3886/kratos-modular/internal/platform/mq"
 )
 
@@ -31,15 +32,9 @@ func (r *settingRepo) Find(ctx context.Context, currency string) (*biz.Setting, 
 
 // Save stores the setting and its SettingChanged event in one transaction.
 func (r *settingRepo) Save(ctx context.Context, s *biz.Setting) (*biz.Setting, error) {
-	var row *ent.Setting
 	err := r.data.inTx(ctx, func(tx *ent.Tx) error {
-		_, err := tx.Setting.Get(ctx, s.Currency)
-		switch {
-		case ent.IsNotFound(err):
-			row, err = tx.Setting.Create().SetID(s.Currency).SetMaxAmount(s.MaxAmount).Save(ctx)
-		case err == nil:
-			row, err = tx.Setting.UpdateOneID(s.Currency).SetMaxAmount(s.MaxAmount).Save(ctx)
-		}
+		err := tx.Setting.Create().SetID(s.Currency).SetMaxAmount(s.MaxAmount).
+			OnConflictColumns(setting.FieldID).UpdateMaxAmount().Exec(ctx)
 		if err != nil {
 			return err
 		}
@@ -48,7 +43,7 @@ func (r *settingRepo) Save(ctx context.Context, s *biz.Setting) (*biz.Setting, e
 	if err != nil {
 		return nil, err
 	}
-	return toBiz(row), nil
+	return &biz.Setting{Currency: s.Currency, MaxAmount: s.MaxAmount}, nil
 }
 
 func toBiz(row *ent.Setting) *biz.Setting {

@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/nam3886/kratos-modular/internal/module/settings/internal/data/ent/setting"
@@ -17,6 +19,7 @@ type SettingCreate struct {
 	config
 	mutation *SettingMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetMaxAmount sets the "max_amount" field.
@@ -99,6 +102,7 @@ func (_c *SettingCreate) createSpec() (*Setting, *sqlgraph.CreateSpec) {
 		_node = &Setting{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(setting.Table, sqlgraph.NewFieldSpec(setting.FieldID, field.TypeString))
 	)
+	_spec.OnConflict = _c.conflict
 	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
@@ -110,11 +114,186 @@ func (_c *SettingCreate) createSpec() (*Setting, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Setting.Create().
+//		SetMaxAmount(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.SettingUpsert) {
+//			SetMaxAmount(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *SettingCreate) OnConflict(opts ...sql.ConflictOption) *SettingUpsertOne {
+	_c.conflict = opts
+	return &SettingUpsertOne{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Setting.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *SettingCreate) OnConflictColumns(columns ...string) *SettingUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &SettingUpsertOne{
+		create: _c,
+	}
+}
+
+type (
+	// SettingUpsertOne is the builder for "upsert"-ing
+	//  one Setting node.
+	SettingUpsertOne struct {
+		create *SettingCreate
+	}
+
+	// SettingUpsert is the "OnConflict" setter.
+	SettingUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetMaxAmount sets the "max_amount" field.
+func (u *SettingUpsert) SetMaxAmount(v int64) *SettingUpsert {
+	u.Set(setting.FieldMaxAmount, v)
+	return u
+}
+
+// UpdateMaxAmount sets the "max_amount" field to the value that was provided on create.
+func (u *SettingUpsert) UpdateMaxAmount() *SettingUpsert {
+	u.SetExcluded(setting.FieldMaxAmount)
+	return u
+}
+
+// AddMaxAmount adds v to the "max_amount" field.
+func (u *SettingUpsert) AddMaxAmount(v int64) *SettingUpsert {
+	u.Add(setting.FieldMaxAmount, v)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.Setting.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(setting.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *SettingUpsertOne) UpdateNewValues() *SettingUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(setting.FieldID)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Setting.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *SettingUpsertOne) Ignore() *SettingUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *SettingUpsertOne) DoNothing() *SettingUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the SettingCreate.OnConflict
+// documentation for more info.
+func (u *SettingUpsertOne) Update(set func(*SettingUpsert)) *SettingUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&SettingUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetMaxAmount sets the "max_amount" field.
+func (u *SettingUpsertOne) SetMaxAmount(v int64) *SettingUpsertOne {
+	return u.Update(func(s *SettingUpsert) {
+		s.SetMaxAmount(v)
+	})
+}
+
+// AddMaxAmount adds v to the "max_amount" field.
+func (u *SettingUpsertOne) AddMaxAmount(v int64) *SettingUpsertOne {
+	return u.Update(func(s *SettingUpsert) {
+		s.AddMaxAmount(v)
+	})
+}
+
+// UpdateMaxAmount sets the "max_amount" field to the value that was provided on create.
+func (u *SettingUpsertOne) UpdateMaxAmount() *SettingUpsertOne {
+	return u.Update(func(s *SettingUpsert) {
+		s.UpdateMaxAmount()
+	})
+}
+
+// Exec executes the query.
+func (u *SettingUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for SettingCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *SettingUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *SettingUpsertOne) ID(ctx context.Context) (id string, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: SettingUpsertOne.ID is not supported by MySQL driver. Use SettingUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *SettingUpsertOne) IDX(ctx context.Context) string {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // SettingCreateBulk is the builder for creating many Setting entities in bulk.
 type SettingCreateBulk struct {
 	config
 	err      error
 	builders []*SettingCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the Setting entities in the database.
@@ -143,6 +322,7 @@ func (_c *SettingCreateBulk) Save(ctx context.Context) ([]*Setting, error) {
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -189,6 +369,141 @@ func (_c *SettingCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (_c *SettingCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Setting.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.SettingUpsert) {
+//			SetMaxAmount(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *SettingCreateBulk) OnConflict(opts ...sql.ConflictOption) *SettingUpsertBulk {
+	_c.conflict = opts
+	return &SettingUpsertBulk{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Setting.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *SettingCreateBulk) OnConflictColumns(columns ...string) *SettingUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &SettingUpsertBulk{
+		create: _c,
+	}
+}
+
+// SettingUpsertBulk is the builder for "upsert"-ing
+// a bulk of Setting nodes.
+type SettingUpsertBulk struct {
+	create *SettingCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.Setting.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(setting.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *SettingUpsertBulk) UpdateNewValues() *SettingUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(setting.FieldID)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Setting.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *SettingUpsertBulk) Ignore() *SettingUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *SettingUpsertBulk) DoNothing() *SettingUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the SettingCreateBulk.OnConflict
+// documentation for more info.
+func (u *SettingUpsertBulk) Update(set func(*SettingUpsert)) *SettingUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&SettingUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetMaxAmount sets the "max_amount" field.
+func (u *SettingUpsertBulk) SetMaxAmount(v int64) *SettingUpsertBulk {
+	return u.Update(func(s *SettingUpsert) {
+		s.SetMaxAmount(v)
+	})
+}
+
+// AddMaxAmount adds v to the "max_amount" field.
+func (u *SettingUpsertBulk) AddMaxAmount(v int64) *SettingUpsertBulk {
+	return u.Update(func(s *SettingUpsert) {
+		s.AddMaxAmount(v)
+	})
+}
+
+// UpdateMaxAmount sets the "max_amount" field to the value that was provided on create.
+func (u *SettingUpsertBulk) UpdateMaxAmount() *SettingUpsertBulk {
+	return u.Update(func(s *SettingUpsert) {
+		s.UpdateMaxAmount()
+	})
+}
+
+// Exec executes the query.
+func (u *SettingUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the SettingCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for SettingCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *SettingUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

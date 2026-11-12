@@ -12,6 +12,7 @@ func NewGRPCServer(c *conf.Server, m *Metrics, modules []Registrar) *grpc.Server
 		grpc.Middleware(
 			recovery.Recovery(),
 			m.middleware,
+			hideInternal,
 		),
 	}
 	if c.GetGrpc().GetNetwork() != "" {

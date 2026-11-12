@@ -616,11 +616,12 @@ type Consumer interface {
 **`http.go`** — `func NewHTTPServer(c *conf.Server, m *Metrics, modules []Registrar) *http.Server`
 
 - Filter (chạy trước khi giải mã): luôn có `bodyLimit(c.GetHttp().GetMaxBodyBytes())`; thêm `cors(c.GetHttp().GetCorsAllowedOrigins())` khi danh sách khác rỗng. Truyền bằng `http.Filter(filters...)`.
-- Middleware theo thứ tự: `recovery.Recovery()`, `m.middleware` (metrics), `validate.Validator(...)` gọi `fieldbehavior.ValidateRequiredFields(msg)` của `go.einride.tech/aip/fieldbehavior` khi request là `proto.Message`.
+- Middleware theo thứ tự: `recovery.Recovery()`, `m.middleware` (metrics), `hideInternal`, `validate.Validator(...)` gọi `fieldbehavior.ValidateRequiredFields(msg)` của `go.einride.tech/aip/fieldbehavior` khi request là `proto.Message`.
 - Áp `Network`, `Address`, `Timeout` từ config khi có giá trị.
+- **`errors.go`**: `hideInternal` là middleware dùng chung cho HTTP và gRPC: lỗi không phải `*errors.Error` của Kratos được ghi log đầy đủ (`slog.ErrorContext`) rồi trả `errors.InternalServer("INTERNAL", "internal error")`; lỗi Kratos đi qua nguyên vẹn. Có một test đơn vị.
 - Sau `http.NewServer(opts...)`: `srv.Handle("/metrics", m.handler)`, rồi gọi `RegisterHTTP` của từng module.
 
-**`grpc.go`** — `func NewGRPCServer(c *conf.Server, m *Metrics, modules []Registrar) *grpc.Server`: middleware `recovery.Recovery()`, `m.middleware`; áp config; gọi `RegisterGRPC` của từng module.
+**`grpc.go`** — `func NewGRPCServer(c *conf.Server, m *Metrics, modules []Registrar) *grpc.Server`: middleware `recovery.Recovery()`, `m.middleware`, `hideInternal`; áp config; gọi `RegisterGRPC` của từng module.
 
 **`messaging.go`**
 
@@ -843,10 +844,10 @@ func (d *Data) inTx(ctx context.Context, fn func(tx *ent.Tx) error) error {
 ```go
 package ent
 
-//go:generate go run -mod=mod entgo.io/ent/cmd/ent generate --feature sql/execquery ./schema
+//go:generate go run -mod=mod entgo.io/ent/cmd/ent generate --feature sql/execquery,sql/upsert ./schema
 ```
 
-- Cờ `sql/execquery` bắt buộc: nó thêm `ExecContext`/`QueryContext` vào `*ent.Tx`, nhờ đó `*ent.Tx` thỏa `mq.Execer`.
+- Cờ `sql/execquery` bắt buộc: nó thêm `ExecContext`/`QueryContext` vào `*ent.Tx`, nhờ đó `*ent.Tx` thỏa `mq.Execer`. Cờ `sql/upsert` thêm `OnConflict*` cho `Save` của settings.
 - `internal/data/ent/migrate/main.go` viết tay (mục 12); `ent generate` không xóa file này.
 
 ## 10. Hai module mẫu
@@ -888,19 +889,13 @@ func (uc *SettingUsecase) Update(ctx context.Context, s *Setting) (*Setting, err
 **`data`**
 
 - `Find`: `ent.IsNotFound(err)` thì trả `biz.ErrSettingNotFound`.
-- `Save`: trong một `inTx`, tạo mới nếu chưa có hoặc cập nhật nếu đã có, rồi phát event; trả `toBiz(row)` từ dòng vừa ghi:
+- `Save`: trong một `inTx`, upsert một câu lệnh (`INSERT ... ON CONFLICT (id) DO UPDATE`), rồi phát event; trả lại giá trị vừa lưu:
 
 ```go
 func (r *settingRepo) Save(ctx context.Context, s *biz.Setting) (*biz.Setting, error) {
-	var row *ent.Setting
 	err := r.data.inTx(ctx, func(tx *ent.Tx) error {
-		_, err := tx.Setting.Get(ctx, s.Currency)
-		switch {
-		case ent.IsNotFound(err):
-			row, err = tx.Setting.Create().SetID(s.Currency).SetMaxAmount(s.MaxAmount).Save(ctx)
-		case err == nil:
-			row, err = tx.Setting.UpdateOneID(s.Currency).SetMaxAmount(s.MaxAmount).Save(ctx)
-		}
+		err := tx.Setting.Create().SetID(s.Currency).SetMaxAmount(s.MaxAmount).
+			OnConflictColumns(setting.FieldID).UpdateMaxAmount().Exec(ctx)
 		if err != nil {
 			return err
 		}
@@ -909,7 +904,7 @@ func (r *settingRepo) Save(ctx context.Context, s *biz.Setting) (*biz.Setting, e
 	if err != nil {
 		return nil, err
 	}
-	return toBiz(row), nil
+	return &biz.Setting{Currency: s.Currency, MaxAmount: s.MaxAmount}, nil
 }
 
 func toBiz(row *ent.Setting) *biz.Setting {
