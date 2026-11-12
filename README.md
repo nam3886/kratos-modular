@@ -1,128 +1,135 @@
-# Kratos Project Template
+# kratos-modular
 
-A project template for creating new Kratos services with HTTP and gRPC
-transports, protobuf-first APIs, Wire dependency injection, OpenAPI generation,
-and a small CRUD example.
+A modular-monolith starter on [Kratos v3](https://github.com/go-kratos/kratos): one
+deployable application made of modules that the compiler keeps apart.
 
-Use this repository as a starting point for a new service. The included sample
-resource is only reference code for API shape, layering, code generation, and
-testing. Replace it with your own domain model when creating a real project.
+- **API**: proto first. One service definition gives HTTP, gRPC and an OpenAPI document.
+- **Modules**: each module is a small Kratos layout (`service`, `biz`, `data`) behind its own `internal/`.
+- **Data**: ent on PostgreSQL. Any number of databases, one shared pool each, versioned SQL migrations.
+- **Messaging**: transactional outbox, RabbitMQ, consumers with retry, a poison queue and an inbox ([Watermill](https://watermill.io)).
+- **Operations**: Prometheus metrics, health checks, JSON request log, OpenTelemetry tracing, CORS, request size limit, graceful shutdown.
 
-## Create a New Project
+Two sample modules show both ways modules talk to each other: `payment` calls
+`settings` directly to read a limit, and `settings` tells `payment` about
+changes with an event.
 
-1. Copy or generate a repository from this template.
-2. Update the Go module path:
+## Requirements
 
-```bash
-go mod edit -module github.com/your-org/your-service
+Go 1.27, Docker (local services and tests), and the tools installed by `make init`.
+
+## Quick start
+
+```sh
+make init         # install buf, golangci-lint
+make up           # PostgreSQL and RabbitMQ
+make migrate      # create the tables
+make run          # HTTP on :8000, gRPC on :9000
 ```
 
-3. Replace existing import paths that reference this template module.
-4. Rename the command, service metadata, and sample API package to match your
-   service.
-5. Replace the sample CRUD resource with your own resource.
-6. Regenerate code and verify the project:
-
-```bash
-make all
-go test ./...
+```sh
+curl -X PUT localhost:8000/v1/settings/usd -H 'Content-Type: application/json' \
+  -d '{"maxAmount":"1000"}'
+curl -X POST localhost:8000/v1/payments -H 'Content-Type: application/json' \
+  -d '{"amount":"500","currency":"usd"}'
+curl -G localhost:8000/v1/payments -d page_size=10 \
+  --data-urlencode 'filter=currency="USD" AND amount>100' --data-urlencode 'order_by=amount desc'
+curl localhost:8000/metrics
 ```
 
-## What Is Included
+`make help` lists every target.
 
-- Kratos HTTP and gRPC server setup.
-- Protobuf API definitions and generated Go code.
-- OpenAPI generation.
-- Wire-based dependency injection.
-- Layered `service`, `biz`, and `data` packages.
-- A lightweight in-memory repository for the sample resource.
-- Unit tests for the service layer.
-- Server-streaming and bidirectional-streaming examples.
+## Use it as a template
 
-## Project Layout
+1. Rename the module: `go mod edit -module example.com/acme/shop`
+2. Rewrite the import paths:
+   `git grep -lF github.com/nam3886/kratos-modular -- '*.go' '*.proto' .golangci.yml | xargs perl -pi -e 's#github\.com/nam3886/kratos-modular#example.com/acme/shop#g'`
+3. Regenerate the code that embeds the old path: `make generate`
 
-```text
-api/                  Protobuf APIs and generated bindings
-cmd/                  Application entrypoints
-configs/              Local configuration
-internal/server/      HTTP and gRPC server construction
-internal/service/     Transport-facing service methods
-internal/biz/         Usecases, entities, errors, repository interfaces
-internal/data/        Repository implementations
-third_party/          Protobuf dependencies
-openapi.yaml          Generated OpenAPI document
+## Layout
+
+```
+api/<module>/v1/          proto: service, messages, error reasons, events (+ generated code)
+api/openapi/openapi.yaml  generated API document
+cmd/server/               the application; modules.go and wire.go list the modules
+cmd/migrate/              applies migrations
+configs/config.yaml       the only configuration source
+migrations/<database>/    versioned SQL, one directory per configured database
+internal/conf/            config schema
+internal/server/          HTTP and gRPC servers, JSON codec, CORS, body limit, metrics, messaging
+internal/platform/db/       opens every configured database once
+internal/platform/mq/       outbox, forwarder, consumers, inbox
+internal/platform/migrate/  applies and generates migrations
+internal/platform/testkit/  PostgreSQL and RabbitMQ for tests
+internal/module/<module>/
+    module.go             what the rest of the application may use
+    wire.go               wires the module's own layers
+    internal/service/     implements the API; handles incoming events
+    internal/biz/         rules, entities, and the interfaces biz needs
+    internal/data/        repositories, ent schema, adapters to other modules
 ```
 
-## API Template Practices
+## How modules relate
 
-The sample CRUD API demonstrates common conventions for Kratos projects:
+- **Boundary.** Everything under `internal/module/<m>/internal/` is invisible outside
+  that module; the compiler enforces it. Other code may import only
+  `internal/module/<m>` and `api/<m>/v1`.
+- **Direct calls go one way.** The caller declares the interface it needs in its
+  `biz` package and implements it in `data` with the other module's generated
+  server interface (`payment/internal/data/settings_client.go`). The call is a Go
+  call in the same process. If two modules depend on each other, `wire` fails with
+  a cycle error.
+- **The other direction is an event.** A repository stores the row and publishes
+  the event in one transaction (`mq.Publish`). The forwarder delivers it to
+  RabbitMQ after the commit. Delivery is at least once, so a handler records the
+  message in the inbox inside its own transaction (`mq.FirstTime`) and does
+  nothing on a repeat.
+- **Transactions stay inside one repository method.** There is no transaction
+  across modules.
+- **Databases.** A module picks its database with the `database` constant in its
+  `data.go`. Modules on the same database share one connection pool.
 
-- Resource-oriented methods: create, get, list, update, delete.
-- HTTP annotations with `google.api.http`.
-- Required fields with `google.api.field_behavior`.
-- List requests with `page_size`, `page_token`, `filter`, and `order_by`.
-- Pagination with `go.einride.tech/aip/pagination`.
-- Partial updates with `google.protobuf.FieldMask` and `fieldmask.Update`.
-- Streaming RPC definitions for one-way and bidirectional streams.
+## Development
 
-The in-memory data layer intentionally stays simple. It demonstrates flow across
-layers, but does not implement a full query engine. Real repositories can apply
-parsed filters and ordering in SQL, Ent, or another storage layer.
+Adding a module, changing the schema and testing are described in
+[AGENTS.md](AGENTS.md). `make test` and `make test-integration` start
+PostgreSQL and RabbitMQ with testcontainers (Docker).
 
-## Development Commands
+## Configuration
 
-Install generators:
+`configs/config.yaml` is the only source. Notable keys:
 
-```bash
-make init
-```
+| Key | Meaning |
+|---|---|
+| `server.http.cors_allowed_origins` | origins allowed to call the API from a browser; empty disables CORS |
+| `server.http.max_body_bytes` | largest request body; default 1 MiB |
+| `data.databases.<name>` | one entry per database: `driver`, `source`, `max_open_conns`, `debug` |
+| `data.rabbitmq.url` | RabbitMQ connection |
+| `trace.endpoint` | OTLP/gRPC address of a trace collector, e.g. `localhost:4317`; empty exports nothing, logs still carry `trace_id` |
 
-Regenerate API bindings and OpenAPI:
+## Operations
 
-```bash
-make api
-```
-
-Regenerate config protobufs:
-
-```bash
-make config
-```
-
-Run all generation steps, Wire, and module cleanup:
-
-```bash
-make all
-```
-
-Build:
-
-```bash
-make build
-```
-
-Test:
-
-```bash
-go test ./...
-```
-
-## Run Locally
-
-```bash
-go run ./cmd/server -conf ./configs
-```
-
-Default local ports are configured in `configs/config.yaml`:
-
-- HTTP: `0.0.0.0:8000`
-- gRPC: `0.0.0.0:9000`
-
-## Docker
-
-```bash
-docker build -t <your-image-name> .
-docker run --rm -p 8000:8000 -p 9000:9000 \
-  -v </path/to/your/configs>:/data/conf \
-  <your-image-name>
-```
+- `GET /metrics` serves request counts and durations per operation, plus Go
+  runtime and process metrics.
+- `GET /healthz` is always 200. `GET /readyz` pings every database and returns
+  503 when one is down; it does not check RabbitMQ, because the outbox keeps the
+  API correct while the broker is away.
+- `/metrics` also has connection pool stats per database (`go_sql_*`),
+  `outbox_pending_messages` and the messaging metrics `mq_publish_time_seconds`,
+  `mq_subscriber_messages_received_total`, `mq_handler_execution_time_seconds`.
+  A steadily growing `outbox_pending_messages` means the forwarder or the broker
+  has a problem.
+- Logs are JSON, one `request` line per API call with the request text cut at
+  2,000 characters. A message that carries sensitive data must implement
+  `Redact() string`. Filter by `trace_id` to follow one request, including the
+  consumers that handle its events.
+- The `inbox` table is never cleaned: delete old rows by `created_at`.
+- Nothing reads the `poison_poison` queue: watch its length and handle it by hand.
+- Run `migrate` once per release, before the new server version starts.
+- Messages a consumer cannot handle after three retries go to the `poison`
+  exchange, whose durable queue `poison_poison` is declared at startup. Replay
+  from it once the cause is fixed. A message interrupted by shutdown is not
+  poisoned: RabbitMQ redelivers it after restart.
+- A consumer's queue is declared when the application starts. Events published
+  before a consumer's first start are not delivered to it.
+- JSON follows the protobuf JSON mapping, as the OpenAPI document describes it:
+  camelCase names, 64-bit integers as strings, RFC 3339 timestamps.

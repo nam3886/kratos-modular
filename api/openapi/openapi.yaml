@@ -1,0 +1,168 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: kratos-modular
+    version: 1.0.0
+paths:
+    /v1/payments:
+        get:
+            tags:
+                - PaymentService
+            operationId: PaymentService_ListPayments
+            parameters:
+                - name: page
+                  in: query
+                  description: Page number, starting at 1. Default 1.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  description: Items per page. Default 20, at most 100.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: filter
+                  in: query
+                  description: AIP-160 filter on amount, currency, status, e.g. `currency="USD" AND amount>100`.
+                  schema:
+                    type: string
+                - name: orderBy
+                  in: query
+                  description: 'AIP-132 order on amount, currency, status, e.g. `amount desc`. Default: newest first.'
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/payment.v1.ListPaymentsResponse'
+        post:
+            tags:
+                - PaymentService
+            operationId: PaymentService_CreatePayment
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/payment.v1.Payment'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/payment.v1.Payment'
+    /v1/payments/{id}:
+        get:
+            tags:
+                - PaymentService
+            operationId: PaymentService_GetPayment
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/payment.v1.Payment'
+    /v1/settings/{currency}:
+        get:
+            tags:
+                - SettingsService
+            operationId: SettingsService_GetSetting
+            parameters:
+                - name: currency
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/settings.v1.Setting'
+        put:
+            tags:
+                - SettingsService
+            operationId: SettingsService_UpdateSetting
+            parameters:
+                - name: currency
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/settings.v1.UpdateSettingRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/settings.v1.Setting'
+components:
+    schemas:
+        payment.v1.ListPaymentsResponse:
+            type: object
+            properties:
+                payments:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/payment.v1.Payment'
+                totalSize:
+                    type: integer
+                    description: Number of payments matching the filter, across all pages.
+                    format: int32
+        payment.v1.Payment:
+            required:
+                - amount
+                - currency
+            type: object
+            properties:
+                id:
+                    readOnly: true
+                    type: string
+                amount:
+                    type: string
+                currency:
+                    type: string
+                status:
+                    readOnly: true
+                    type: string
+        settings.v1.Setting:
+            required:
+                - currency
+            type: object
+            properties:
+                currency:
+                    type: string
+                maxAmount:
+                    type: string
+        settings.v1.UpdateSettingRequest:
+            type: object
+            properties:
+                currency:
+                    type: string
+                maxAmount:
+                    type: string
+tags:
+    - name: PaymentService
+    - name: SettingsService
+      description: SettingsService owns the per-currency payment limits.

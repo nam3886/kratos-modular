@@ -1,31 +1,37 @@
 package server
 
 import (
-	v1 "kratos-modular/api/todo/v1"
-	"kratos-modular/internal/conf"
-	"kratos-modular/internal/service"
+	"log/slog"
 
+	"github.com/nam3886/kratos-modular/internal/conf"
+
+	"github.com/go-kratos/kratos/contrib/otel/v3/tracing"
 	"github.com/go-kratos/kratos/v3/middleware/recovery"
 	"github.com/go-kratos/kratos/v3/transport/grpc"
 )
 
-// NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server, todo *service.TodoService) *grpc.Server {
+func NewGRPCServer(c *conf.Server, logger *slog.Logger, m *Metrics, modules []Registrar) *grpc.Server {
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
 			recovery.Recovery(),
+			tracing.Server(),
+			requestLog(logger),
+			m.middleware,
+			hideInternal,
 		),
 	}
-	if c.Grpc.Network != "" {
-		opts = append(opts, grpc.Network(c.Grpc.Network))
+	if c.GetGrpc().GetNetwork() != "" {
+		opts = append(opts, grpc.Network(c.GetGrpc().GetNetwork()))
 	}
-	if c.Grpc.Addr != "" {
-		opts = append(opts, grpc.Address(c.Grpc.Addr))
+	if c.GetGrpc().GetAddr() != "" {
+		opts = append(opts, grpc.Address(c.GetGrpc().GetAddr()))
 	}
-	if c.Grpc.Timeout != nil {
-		opts = append(opts, grpc.Timeout(c.Grpc.Timeout.AsDuration()))
+	if c.GetGrpc().GetTimeout() != nil {
+		opts = append(opts, grpc.Timeout(c.GetGrpc().GetTimeout().AsDuration()))
 	}
 	srv := grpc.NewServer(opts...)
-	v1.RegisterTodoServiceServer(srv, todo)
+	for _, m := range modules {
+		m.RegisterGRPC(srv)
+	}
 	return srv
 }

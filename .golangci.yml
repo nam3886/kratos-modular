@@ -1,0 +1,27 @@
+version: "2"
+
+run:
+  build-tags:
+    - integration
+
+linters:
+  # The standard set: errcheck, govet, ineffassign, staticcheck, unused.
+  default: standard
+  enable:
+    - bodyclose
+    - errorlint
+    - misspell
+    - nilerr
+    - unconvert
+  exclusions:
+    # Generated code (*.pb.go, ent, wire_gen.go) is recognised by its header.
+    generated: strict
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/nam3886/kratos-modular

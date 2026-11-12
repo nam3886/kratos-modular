@@ -1,24 +1,27 @@
-FROM golang:1.25 AS builder
+FROM golang:1.27 AS builder
 
 COPY . /src
 WORKDIR /src
 
-RUN GOPROXY=https://goproxy.cn make build
+RUN make build
 
 FROM debian:stable-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-		ca-certificates  \
-        netbase \
-        && rm -rf /var/lib/apt/lists/ \
-        && apt-get autoremove -y && apt-get autoclean -y
+		ca-certificates \
+		netbase \
+		&& rm -rf /var/lib/apt/lists/ \
+		&& apt-get autoremove -y && apt-get autoclean -y
 
 COPY --from=builder /src/bin /app
 
 WORKDIR /app
 
+USER 65532:65532
+
 EXPOSE 8000
 EXPOSE 9000
 VOLUME /data/conf
 
+# Run "./migrate -conf /data/conf" once per release before starting the server.
 CMD ["./server", "-conf", "/data/conf"]

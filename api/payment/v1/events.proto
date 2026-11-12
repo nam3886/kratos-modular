@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package payment.v1;
+
+option go_package = "github.com/nam3886/kratos-modular/api/payment/v1;v1";
+
+// PaymentCreated is published after a payment is stored.
+message PaymentCreated {
+  string id = 1;
+  int64 amount = 2;
+  string currency = 3;
+}
