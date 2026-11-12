@@ -127,16 +127,6 @@ The outbox and inbox tables are created by `make migrate` as well.
 | `cmd/server` (tag `integration`) | the whole application with real PostgreSQL and RabbitMQ |
 
 `make test` and `make test-integration` start the services with testcontainers.
-To use services that are already running, set `TEST_DATABASE_URL` and
-`TEST_RABBITMQ_URL` and add `-p 1`, because the packages then share one database.
-Tests run `DROP SCHEMA public CASCADE` on that database, so the name must
-contain `test` or the tests refuse to start. `make up` creates `app_test` on a fresh volume:
-
-```sh
-export TEST_DATABASE_URL='postgres://app:app@127.0.0.1:5432/app_test?sslmode=disable'
-export TEST_RABBITMQ_URL='amqp://guest:guest@127.0.0.1:5672/'
-go test -p 1 ./...
-```
 
 ## Configuration
 

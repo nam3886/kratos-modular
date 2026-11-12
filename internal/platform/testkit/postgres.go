@@ -1,17 +1,11 @@
 // Package testkit gives tests the real services the application runs on.
-// Each helper starts a container once per test binary. To use services that
-// are already running instead, set TEST_DATABASE_URL and TEST_RABBITMQ_URL;
-// packages then share them, so run the tests with -p 1.
+// Each helper starts a container once per test binary.
 package testkit
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log/slog"
-	"net/url"
-	"os"
-	"strings"
 	"sync"
 	"testing"
 
@@ -31,13 +25,6 @@ var (
 func PostgresURL(t testing.TB) string {
 	t.Helper()
 	pgOnce.Do(func() {
-		if pgURL = os.Getenv("TEST_DATABASE_URL"); pgURL != "" {
-			// Tests drop the whole public schema.
-			if u, err := url.Parse(pgURL); err != nil || !strings.Contains(u.Path, "test") {
-				pgErr = fmt.Errorf("TEST_DATABASE_URL must name a database containing %q, because tests wipe it", "test")
-			}
-			return
-		}
 		ctx := context.Background()
 		ctr, err := postgres.Run(ctx, "postgres:17-alpine",
 			postgres.WithDatabase("test"),
@@ -68,13 +55,6 @@ func Postgres(t testing.TB) *db.Manager {
 		t.Fatalf("open test database: %v", err)
 	}
 	t.Cleanup(cleanup)
-	ResetPostgres(t, dbs)
-	return dbs
-}
-
-// ResetPostgres drops everything in the "main" database and migrates it again.
-func ResetPostgres(t testing.TB, dbs *db.Manager) {
-	t.Helper()
 	main, err := dbs.Get("main")
 	if err != nil {
 		t.Fatal(err)
@@ -86,6 +66,7 @@ func ResetPostgres(t testing.TB, dbs *db.Manager) {
 	if err := migrate.Up(ctx, dbs, slog.New(slog.NewTextHandler(io.Discard, nil))); err != nil {
 		t.Fatalf("migrate test database: %v", err)
 	}
+	return dbs
 }
 
 func Count(t testing.TB, dbs *db.Manager, table string) int {

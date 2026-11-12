@@ -100,7 +100,7 @@ kratos-modular/
 │       ├── <timestamp>_settings_init.sql
 │       ├── <timestamp>_payment_init.sql
 │       └── atlas.sum
-├── deploy/postgres/init.sql            # CREATE DATABASE app_dev, app_test (cho docker-compose)
+├── deploy/postgres/init.sql            # CREATE DATABASE app_dev (cho docker-compose)
 ├── internal/
 │   ├── conf/
 │   │   ├── conf.proto
@@ -571,20 +571,16 @@ func Up(ctx context.Context, dbs *db.Manager, log *slog.Logger) error
 ### 7.4 `platform/testkit`
 
 ```go
-// PostgresURL trả DSN của PostgreSQL test. Nếu biến TEST_DATABASE_URL có giá trị thì dùng nó,
-// nếu không thì khởi động container postgres:17-alpine một lần cho mỗi test binary (sync.Once).
+// PostgresURL khởi động container postgres:17-alpine một lần cho mỗi test binary (sync.Once) và trả DSN.
 func PostgresURL(t testing.TB) string
 
-// Postgres trả Manager có database "main" trống và đã migrate.
+// Postgres trả Manager có database "main" trống và đã migrate (DROP SCHEMA public CASCADE; CREATE SCHEMA public; rồi migrate.Up).
 func Postgres(t testing.TB) *db.Manager
-
-// ResetPostgres: DROP SCHEMA public CASCADE; CREATE SCHEMA public; rồi migrate.Up.
-func ResetPostgres(t testing.TB, dbs *db.Manager)
 
 // Count đếm số dòng của một bảng trong database "main".
 func Count(t testing.TB, dbs *db.Manager, table string) int
 
-// RabbitMQURL: TEST_RABBITMQ_URL nếu có, nếu không thì container rabbitmq:4-alpine.
+// RabbitMQURL: container rabbitmq:4-alpine, một lần cho mỗi test binary.
 func RabbitMQURL(t testing.TB) string
 ```
 
@@ -1272,7 +1268,6 @@ Dùng gì thì test bằng cái đó: test tầng `data` và test tích hợp ch
 **Chạy test**
 
 - `go test ./...` và `go test -tags integration ./...` tự khởi động container; mỗi package test có container riêng nên chạy song song được.
-- Khi đặt `TEST_DATABASE_URL` và `TEST_RABBITMQ_URL`, các package dùng chung một database nên phải thêm `-p 1`. Tên database trong `TEST_DATABASE_URL` phải chứa `test`, nếu không `PostgresURL` báo lỗi (test xóa sạch schema `public`).
 
 ## 14. Công cụ
 
@@ -1372,7 +1367,7 @@ volumes:
   postgres:
 ```
 
-`deploy/postgres/init.sql` chỉ có `CREATE DATABASE app_dev;` (database trống cho `make migration`) và `CREATE DATABASE app_test;` (database dùng một lần cho `TEST_DATABASE_URL`).
+`deploy/postgres/init.sql` chỉ có `CREATE DATABASE app_dev;` (database trống cho `make migration`).
 
 **`.gitignore`**: `bin/`, `*.exe`, `*.test`, `*.out`, `vendor/`, `go.work`, `go.work.sum`, `.idea/`, `.vscode/`, `.DS_Store`.
 

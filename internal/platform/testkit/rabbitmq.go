@@ -2,7 +2,6 @@ package testkit
 
 import (
 	"context"
-	"os"
 	"sync"
 	"testing"
 
@@ -18,9 +17,6 @@ var (
 func RabbitMQURL(t testing.TB) string {
 	t.Helper()
 	mqOnce.Do(func() {
-		if mqURL = os.Getenv("TEST_RABBITMQ_URL"); mqURL != "" {
-			return
-		}
 		ctx := context.Background()
 		ctr, err := rabbitmq.Run(ctx, "rabbitmq:4-alpine")
 		if err != nil {
