@@ -9,6 +9,8 @@ package main
 import (
 	"github.com/go-kratos/kratos/v3"
 	"github.com/nam3886/kratos-modular/internal/conf"
+	"github.com/nam3886/kratos-modular/internal/platform/db"
+	"github.com/nam3886/kratos-modular/internal/platform/mq"
 	"github.com/nam3886/kratos-modular/internal/server"
 	"log/slog"
 )
@@ -17,9 +19,32 @@ import (
 
 // wireApp init kratos application.
 func wireApp(confServer *conf.Server, data *conf.Data, logger *slog.Logger) (*kratos.App, func(), error) {
-	grpcServer := server.NewGRPCServer(confServer)
-	httpServer := server.NewHTTPServer(confServer)
-	app := newApp(logger, grpcServer, httpServer)
+	metrics, err := server.NewMetrics()
+	if err != nil {
+		return nil, nil, err
+	}
+	v := registrars()
+	grpcServer := server.NewGRPCServer(confServer, metrics, v)
+	httpServer := server.NewHTTPServer(confServer, metrics, v)
+	manager, cleanup, err := db.Open(data)
+	if err != nil {
+		return nil, nil, err
+	}
+	mqMQ, cleanup2, err := mq.New(data, manager, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	v2 := consumers()
+	messaging, err := server.NewMessaging(mqMQ, v2)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	app := newApp(logger, grpcServer, httpServer, messaging)
 	return app, func() {
+		cleanup2()
+		cleanup()
 	}, nil
 }

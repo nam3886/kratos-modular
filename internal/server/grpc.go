@@ -7,11 +7,12 @@ import (
 	"github.com/go-kratos/kratos/v3/transport/grpc"
 )
 
-// NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server) *grpc.Server {
+// NewGRPCServer new a gRPC server and mounts every module on it.
+func NewGRPCServer(c *conf.Server, m *Metrics, modules []Registrar) *grpc.Server {
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
 			recovery.Recovery(),
+			m.middleware,
 		),
 	}
 	if c.Grpc.Network != "" {
@@ -24,5 +25,8 @@ func NewGRPCServer(c *conf.Server) *grpc.Server {
 		opts = append(opts, grpc.Timeout(c.Grpc.Timeout.AsDuration()))
 	}
 	srv := grpc.NewServer(opts...)
+	for _, m := range modules {
+		m.RegisterGRPC(srv)
+	}
 	return srv
 }
