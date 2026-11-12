@@ -7,7 +7,7 @@ deployable application made of modules that the compiler keeps apart.
 - **Modules**: each module is a small Kratos layout (`service`, `biz`, `data`) behind its own `internal/`.
 - **Data**: ent on PostgreSQL. Any number of databases, one shared pool each, versioned SQL migrations.
 - **Messaging**: transactional outbox, RabbitMQ, consumers with retry, a poison queue and an inbox ([Watermill](https://watermill.io)).
-- **Operations**: Prometheus metrics, CORS, request size limit, graceful shutdown.
+- **Operations**: Prometheus metrics, health checks, JSON request log, OpenTelemetry tracing, CORS, request size limit, graceful shutdown.
 
 Two sample modules show both ways modules talk to each other: `payment` calls
 `settings` directly to read a limit, and `settings` tells `payment` about
@@ -31,6 +31,8 @@ curl -X PUT localhost:8000/v1/settings/usd -H 'Content-Type: application/json' \
   -d '{"maxAmount":"1000"}'
 curl -X POST localhost:8000/v1/payments -H 'Content-Type: application/json' \
   -d '{"amount":"500","currency":"usd"}'
+curl -G localhost:8000/v1/payments -d page_size=10 \
+  --data-urlencode 'filter=currency="USD" AND amount>100' --data-urlencode 'order_by=amount desc'
 curl localhost:8000/metrics
 ```
 
@@ -102,11 +104,26 @@ PostgreSQL and RabbitMQ with testcontainers (Docker).
 | `server.http.max_body_bytes` | largest request body; default 1 MiB |
 | `data.databases.<name>` | one entry per database: `driver`, `source`, `max_open_conns`, `debug` |
 | `data.rabbitmq.url` | RabbitMQ connection |
+| `trace.endpoint` | OTLP/gRPC address of a trace collector, e.g. `localhost:4317`; empty exports nothing, logs still carry `trace_id` |
 
 ## Operations
 
 - `GET /metrics` serves request counts and durations per operation, plus Go
   runtime and process metrics.
+- `GET /healthz` is always 200. `GET /readyz` pings every database and returns
+  503 when one is down; it does not check RabbitMQ, because the outbox keeps the
+  API correct while the broker is away.
+- `/metrics` also has connection pool stats per database (`go_sql_*`),
+  `outbox_pending_messages` and the messaging metrics `mq_publish_time_seconds`,
+  `mq_subscriber_messages_received_total`, `mq_handler_execution_time_seconds`.
+  A steadily growing `outbox_pending_messages` means the forwarder or the broker
+  has a problem.
+- Logs are JSON, one `request` line per API call with the request text cut at
+  2,000 characters. A message that carries sensitive data must implement
+  `Redact() string`. Filter by `trace_id` to follow one request, including the
+  consumers that handle its events.
+- The `inbox` table is never cleaned: delete old rows by `created_at`.
+- Nothing reads the `poison_poison` queue: watch its length and handle it by hand.
 - Run `migrate` once per release, before the new server version starts.
 - Messages a consumer cannot handle after three retries go to the `poison`
   exchange, whose durable queue `poison_poison` is declared at startup. Replay

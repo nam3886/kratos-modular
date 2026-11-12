@@ -64,6 +64,14 @@ client ──► DTO ──► service ──► DO ──► biz ──► DO �
   driver text never reaches clients.
 - **cmd.** The only place that wires modules together (`modules.go`, `wire.go`).
 
+List endpoints use offset pagination with AIP filtering and ordering; copy
+`ListPayments`. `service` declares the fields a client may filter and order on,
+`data` translates them to Ent (`aip-go/ents`) and always adds `id` descending
+as the last sort key.
+
+An event published with `mq.Publish` carries the trace of the request; a
+handler must use the `ctx` it is given for logging and queries.
+
 ## Adding a module
 
 1. Write `api/<name>/v1/*.proto`, then `make api`.
