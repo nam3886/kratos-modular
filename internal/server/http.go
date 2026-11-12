@@ -12,10 +12,12 @@ import (
 // NewHTTPServer new an HTTP server, mounts every module on it and serves
 // the metrics at /metrics.
 func NewHTTPServer(c *conf.Server, m *Metrics, modules []Registrar) *http.Server {
-	filters := []http.FilterFunc{bodyLimit(c.GetHttp().GetMaxBodyBytes())}
+	var filters []http.FilterFunc
+	// CORS goes first so that 413 responses from bodyLimit carry its headers.
 	if len(c.GetHttp().GetCorsAllowedOrigins()) > 0 {
 		filters = append(filters, cors(c.GetHttp().GetCorsAllowedOrigins()))
 	}
+	filters = append(filters, bodyLimit(c.GetHttp().GetMaxBodyBytes()))
 	var opts = []http.ServerOption{
 		http.Filter(filters...),
 		// Without these the router falls back to http.DefaultServeMux, which

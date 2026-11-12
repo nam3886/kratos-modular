@@ -615,7 +615,7 @@ type Consumer interface {
 
 **`http.go`** — `func NewHTTPServer(c *conf.Server, m *Metrics, modules []Registrar) *http.Server`
 
-- Filter (chạy trước khi giải mã): luôn có `bodyLimit(c.GetHttp().GetMaxBodyBytes())`; thêm `cors(c.GetHttp().GetCorsAllowedOrigins())` khi danh sách khác rỗng. Truyền bằng `http.Filter(filters...)`.
+- Filter (chạy trước khi giải mã): `cors(c.GetHttp().GetCorsAllowedOrigins())` khi danh sách khác rỗng, rồi luôn có `bodyLimit(c.GetHttp().GetMaxBodyBytes())`; thứ tự này để phản hồi 413 vẫn có header CORS (filter đầu tiên là ngoài cùng). Truyền bằng `http.Filter(filters...)`.
 - Middleware theo thứ tự: `recovery.Recovery()`, `m.middleware` (metrics), `hideInternal`. Không có validator ở tầng transport: `biz` kiểm tra và trả reason cụ thể.
 - Áp `Network`, `Address`, `Timeout` từ config khi có giá trị.
 - **`errors.go`**: `hideInternal` là middleware dùng chung cho HTTP và gRPC: lỗi không phải `*errors.Error` của Kratos được ghi log đầy đủ (`slog.ErrorContext`) rồi trả `errors.InternalServer("INTERNAL", "internal error")`; lỗi Kratos đi qua nguyên vẹn. Có một test đơn vị.
