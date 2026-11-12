@@ -3,6 +3,9 @@ package server
 import (
 	nethttp "net/http"
 
+	"github.com/nam3886/kratos-modular/internal/platform/db"
+	"github.com/nam3886/kratos-modular/internal/platform/mq"
+
 	"github.com/go-kratos/kratos/contrib/otel/v3/metrics"
 	"github.com/go-kratos/kratos/v3/middleware"
 	"github.com/prometheus/client_golang/prometheus"
@@ -19,9 +22,25 @@ type Metrics struct {
 	handler    nethttp.Handler
 }
 
-func NewMetrics() (*Metrics, error) {
+// NewRegistry holds every metric of the application: runtime, connection
+// pools and the outbox backlog here, requests and messaging elsewhere.
+func NewRegistry(dbs *db.Manager) *prometheus.Registry {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collectors.NewGoCollector(), collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	for _, d := range dbs.All() {
+		registry.MustRegister(
+			collectors.NewDBStatsCollector(d.Pool, d.Name),
+			prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+				Name:        "outbox_pending_messages",
+				Help:        "Events committed but not yet delivered to RabbitMQ.",
+				ConstLabels: prometheus.Labels{"db_name": d.Name},
+			}, func() float64 { return mq.Pending(d.Pool) }),
+		)
+	}
+	return registry
+}
+
+func NewMetrics(registry *prometheus.Registry) (*Metrics, error) {
 	exporter, err := otelprom.New(otelprom.WithRegisterer(registry))
 	if err != nil {
 		return nil, err

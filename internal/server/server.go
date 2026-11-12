@@ -8,7 +8,7 @@ import (
 	"github.com/nam3886/kratos-modular/internal/platform/mq"
 )
 
-var ProviderSet = wire.NewSet(NewGRPCServer, NewHTTPServer, NewMessaging, NewMetrics)
+var ProviderSet = wire.NewSet(NewGRPCServer, NewHTTPServer, NewMessaging, NewMetrics, NewRegistry)
 
 type Registrar interface {
 	RegisterHTTP(*http.Server)

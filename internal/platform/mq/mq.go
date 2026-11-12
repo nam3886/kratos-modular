@@ -16,8 +16,10 @@ import (
 	amqp "github.com/ThreeDotsLabs/watermill-amqp/v3/pkg/amqp"
 	wsql "github.com/ThreeDotsLabs/watermill-sql/v4/pkg/sql"
 	"github.com/ThreeDotsLabs/watermill/components/forwarder"
+	wmetrics "github.com/ThreeDotsLabs/watermill/components/metrics"
 	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/ThreeDotsLabs/watermill/message/router/middleware"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/nam3886/kratos-modular/internal/conf"
 	"github.com/nam3886/kratos-modular/internal/platform/db"
@@ -49,7 +51,7 @@ type MQ struct {
 
 // New connects to RabbitMQ and prepares one forwarder per database. The
 // outbox and inbox tables are created by the migrate command.
-func New(c *conf.Data, dbs *db.Manager, log *slog.Logger) (*MQ, func(), error) {
+func New(c *conf.Data, dbs *db.Manager, log *slog.Logger, registry *prometheus.Registry) (*MQ, func(), error) {
 	logger := watermill.NewSlogLogger(log)
 	url := c.GetRabbitmq().GetUrl()
 	pub, err := amqp.NewPublisher(config(url, "publisher"), logger)
@@ -74,6 +76,12 @@ func New(c *conf.Data, dbs *db.Manager, log *slog.Logger) (*MQ, func(), error) {
 		return nil, nil, fmt.Errorf("declare poison queue: %w", err)
 	}
 	_ = ps.Close()
+	metrics := wmetrics.NewPrometheusMetricsBuilder(registry, "mq", "")
+	metrics.AddPrometheusRouterMetrics(router)
+	fwdPub, err := metrics.DecoratePublisher(pub)
+	if err != nil {
+		return nil, nil, err
+	}
 	router.AddMiddleware(
 		poison,
 		middleware.Retry{MaxRetries: 3, InitialInterval: 100 * time.Millisecond, MaxInterval: time.Second, Multiplier: 2, Logger: logger}.Middleware,
@@ -89,7 +97,7 @@ func New(c *conf.Data, dbs *db.Manager, log *slog.Logger) (*MQ, func(), error) {
 		if err != nil {
 			return nil, nil, err
 		}
-		fwd, err := forwarder.NewForwarder(sub, pub, logger, forwarder.Config{ForwarderTopic: outboxTopic})
+		fwd, err := forwarder.NewForwarder(sub, fwdPub, logger, forwarder.Config{ForwarderTopic: outboxTopic})
 		if err != nil {
 			return nil, nil, err
 		}

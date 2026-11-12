@@ -20,12 +20,14 @@ import (
 // Injectors from wire.go:
 
 func wireApp(confServer *conf.Server, data *conf.Data, logger *slog.Logger) (*kratos.App, func(), error) {
-	metrics, err := server.NewMetrics()
+	manager, cleanup, err := db.Open(data)
 	if err != nil {
 		return nil, nil, err
 	}
-	manager, cleanup, err := db.Open(data)
+	registry := server.NewRegistry(manager)
+	metrics, err := server.NewMetrics(registry)
 	if err != nil {
+		cleanup()
 		return nil, nil, err
 	}
 	module, err := settings.New(manager)
@@ -42,7 +44,7 @@ func wireApp(confServer *conf.Server, data *conf.Data, logger *slog.Logger) (*kr
 	v := registrars(module, paymentModule)
 	grpcServer := server.NewGRPCServer(confServer, logger, metrics, v)
 	httpServer := server.NewHTTPServer(confServer, logger, metrics, manager, v)
-	mqMQ, cleanup2, err := mq.New(data, manager, logger)
+	mqMQ, cleanup2, err := mq.New(data, manager, logger, registry)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

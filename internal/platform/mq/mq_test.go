@@ -9,6 +9,7 @@ import (
 	"github.com/ThreeDotsLabs/watermill"
 	amqp "github.com/ThreeDotsLabs/watermill-amqp/v3/pkg/amqp"
 	"github.com/ThreeDotsLabs/watermill/message"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/nam3886/kratos-modular/internal/conf"
 	"github.com/nam3886/kratos-modular/internal/platform/mq"
@@ -20,7 +21,7 @@ func TestStopRedeliversInFlightMessage(t *testing.T) {
 	url := testkit.RabbitMQURL(t)
 	dbs := testkit.Postgres(t)
 	newMQ := func() *mq.MQ {
-		m, cleanup, err := mq.New(&conf.Data{Rabbitmq: &conf.Data_RabbitMQ{Url: url}}, dbs, slog.New(slog.DiscardHandler))
+		m, cleanup, err := mq.New(&conf.Data{Rabbitmq: &conf.Data_RabbitMQ{Url: url}}, dbs, slog.New(slog.DiscardHandler), prometheus.NewRegistry())
 		if err != nil {
 			t.Fatal(err)
 		}

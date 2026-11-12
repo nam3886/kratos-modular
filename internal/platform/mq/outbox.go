@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/ThreeDotsLabs/watermill"
 	wsql "github.com/ThreeDotsLabs/watermill-sql/v4/pkg/sql"
@@ -71,4 +72,15 @@ func InitTables(ctx context.Context, pool *sql.DB) error {
 		return fmt.Errorf("create inbox table: %w", err)
 	}
 	return nil
+}
+
+// Pending counts the events waiting in the outbox of one database.
+func Pending(pool *sql.DB) float64 {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	var n float64
+	if err := pool.QueryRowContext(ctx, `SELECT count(*) FROM "watermill_`+outboxTopic+`"`).Scan(&n); err != nil {
+		return -1
+	}
+	return n
 }
