@@ -310,8 +310,8 @@ service SettingsService {
   }
   rpc UpdateSetting (UpdateSettingRequest) returns (Setting) {
     option (google.api.http) = {
-      put: "/v1/settings/{setting.currency}"
-      body: "setting"
+      put: "/v1/settings/{currency}"
+      body: "*"
     };
   }
 }
@@ -326,7 +326,8 @@ message GetSettingRequest {
 }
 
 message UpdateSettingRequest {
-  Setting setting = 1 [(google.api.field_behavior) = REQUIRED];
+  string currency = 1;
+  int64 max_amount = 2;
 }
 
 enum ErrorReason {
@@ -424,8 +425,8 @@ message PaymentCreated {
 
 - **Tên topic của event** là tên proto đầy đủ của message, ví dụ `settings.v1.SettingChanged`. Payload là message proto mã hóa nhị phân.
 - **Lỗi** tạo bằng `errors.NotFound(v1.ErrorReason_X.String(), "...")` hoặc `errors.BadRequest(...)` của `github.com/go-kratos/kratos/v3/errors`, khai báo thành biến trong `biz`.
-- **JSON** theo ánh xạ JSON của protobuf (mục 8): tên trường camelCase, `int64` là chuỗi. Ví dụ body tạo payment: `{"amount":"500","currency":"usd"}`; body cập nhật setting: `{"currency":"USD","maxAmount":"1000"}`.
-- **OpenAPI** sinh ra một file `api/openapi/openapi.yaml` cho mọi module (plugin `protoc-gen-openapi`, tham số `fq_schema_naming=true`, `default_response=false`, `strategy: all`).
+- **JSON** theo ánh xạ JSON của protobuf (mục 8): tên trường camelCase, `int64` là chuỗi. Ví dụ body tạo payment: `{"amount":"500","currency":"usd"}`; body cập nhật setting (mã tiền nằm ở đường dẫn): `{"maxAmount":"1000"}`.
+- **OpenAPI** sinh ra một file `api/openapi/openapi.yaml` cho mọi module (plugin `protoc-gen-openapi`, tham số `fq_schema_naming=true`, `default_response=false`, `title=kratos-modular`, `version=1.0.0`, `strategy: all`; không đặt `title` thì `info.title` rỗng). Chỉ có một đường dẫn `/v1/settings/{currency}` cho PUT, không còn route `{setting.currency}` thứ hai.
 
 ## 7. Hạ tầng dùng chung (`internal/platform`)
 
@@ -1444,8 +1445,8 @@ Bản triển khai chỉ được coi là xong khi mọi mục dưới đây đ�
 
 
 
-- [ ] `PUT /v1/settings/usd` với `{"currency":"USD","maxAmount":"1000"}` → 200, body có `"maxAmount":"1000"`
-- [ ] Cùng request với `{"currency":"USD","max_amount":2000}` → 200 (chấp nhận tên proto và số)
+- [ ] `PUT /v1/settings/usd` với `{"maxAmount":"1000"}` → 200, body có `"maxAmount":"1000"`
+- [ ] Cùng request với `{"max_amount":2000}` → 200 (chấp nhận tên proto và số)
 - [ ] `POST /v1/payments` với `{"amount":"500","currency":"usd"}` → 200, `currency` là `USD`, `status` là `pending`
 - [ ] `POST /v1/payments` số tiền 5000 → 400, `reason` là `PAYMENT_LIMIT_EXCEEDED`
 - [ ] `POST /v1/payments` loại tiền chưa có setting → 400, message "currency is not supported"

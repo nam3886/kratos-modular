@@ -3,8 +3,8 @@
 
 openapi: 3.0.3
 info:
-    title: ""
-    version: 0.0.1
+    title: kratos-modular
+    version: 1.0.0
 paths:
     /v1/payments:
         post:
@@ -60,13 +60,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/settings.v1.Setting'
-    /v1/settings/{setting.currency}:
         put:
             tags:
                 - SettingsService
             operationId: SettingsService_UpdateSetting
             parameters:
-                - name: setting.currency
+                - name: currency
                   in: path
                   required: true
                   schema:
@@ -75,7 +74,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/settings.v1.Setting'
+                            $ref: '#/components/schemas/settings.v1.UpdateSettingRequest'
                 required: true
             responses:
                 "200":
@@ -105,6 +104,13 @@ components:
         settings.v1.Setting:
             required:
                 - currency
+            type: object
+            properties:
+                currency:
+                    type: string
+                maxAmount:
+                    type: string
+        settings.v1.UpdateSettingRequest:
             type: object
             properties:
                 currency:

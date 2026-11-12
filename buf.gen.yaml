@@ -17,3 +17,5 @@ plugins:
     opt:
       - fq_schema_naming=true
       - default_response=false
+      - title=kratos-modular
+      - version=1.0.0

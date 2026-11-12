@@ -14,8 +14,8 @@ service SettingsService {
   }
   rpc UpdateSetting (UpdateSettingRequest) returns (Setting) {
     option (google.api.http) = {
-      put: "/v1/settings/{setting.currency}"
-      body: "setting"
+      put: "/v1/settings/{currency}"
+      body: "*"
     };
   }
 }
@@ -30,7 +30,8 @@ message GetSettingRequest {
 }
 
 message UpdateSettingRequest {
-  Setting setting = 1 [(google.api.field_behavior) = REQUIRED];
+  string currency = 1;
+  int64 max_amount = 2;
 }
 
 enum ErrorReason {

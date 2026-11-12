@@ -29,7 +29,7 @@ make run          # HTTP on :8000, gRPC on :9000
 
 ```sh
 curl -X PUT localhost:8000/v1/settings/usd -H 'Content-Type: application/json' \
-  -d '{"currency":"USD","maxAmount":"1000"}'
+  -d '{"maxAmount":"1000"}'
 curl -X POST localhost:8000/v1/payments -H 'Content-Type: application/json' \
   -d '{"amount":"500","currency":"usd"}'
 curl localhost:8000/metrics

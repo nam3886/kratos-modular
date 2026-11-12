@@ -28,7 +28,7 @@ type SettingsServiceHTTPServer interface {
 func RegisterSettingsServiceHTTPServer(s *http.Server, srv SettingsServiceHTTPServer) {
 	r := s.Route("/")
 	r.Handle("GET", "/v1/settings/{currency}", _SettingsService_GetSetting0_HTTP_Handler(srv))
-	r.Handle("PUT", "/v1/settings/{setting.currency}", _SettingsService_UpdateSetting0_HTTP_Handler(srv))
+	r.Handle("PUT", "/v1/settings/{currency}", _SettingsService_UpdateSetting0_HTTP_Handler(srv))
 }
 
 func _SettingsService_GetSetting0_HTTP_Handler(srv SettingsServiceHTTPServer) func(ctx http.Context) error {
@@ -56,10 +56,7 @@ func _SettingsService_GetSetting0_HTTP_Handler(srv SettingsServiceHTTPServer) fu
 func _SettingsService_UpdateSetting0_HTTP_Handler(srv SettingsServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in UpdateSettingRequest
-		if err := ctx.Bind(&in.Setting); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
+		if err := ctx.Bind(&in); err != nil {
 			return err
 		}
 		if err := ctx.BindVars(&in); err != nil {
@@ -109,15 +106,15 @@ func (c *SettingsServiceHTTPClientImpl) GetSetting(ctx context.Context, in *GetS
 
 func (c *SettingsServiceHTTPClientImpl) UpdateSetting(ctx context.Context, in *UpdateSettingRequest, opts ...http.CallOption) (*Setting, error) {
 	var out Setting
-	pattern := "/v1/settings/{setting.currency}"
-	path := http.BuildPath(pattern, in, http.WithQueryParams(), http.WithOmitFields("setting"))
+	pattern := "/v1/settings/{currency}"
+	path := http.BuildPath(pattern, in)
 	opts = append([]http.CallOption{
 		http.Accept("application/protojson"),
 		http.ContentType("application/protojson"),
 		http.Operation(OperationSettingsServiceUpdateSetting),
 		http.PathTemplate(pattern),
 	}, opts...)
-	err := c.cc.Invoke(ctx, "PUT", path, in.Setting, &out, opts...)
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -26,7 +26,7 @@ func (s *SettingsService) GetSetting(ctx context.Context, req *v1.GetSettingRequ
 }
 
 func (s *SettingsService) UpdateSetting(ctx context.Context, req *v1.UpdateSettingRequest) (*v1.Setting, error) {
-	got, err := s.uc.Update(ctx, &biz.Setting{Currency: req.GetSetting().GetCurrency(), MaxAmount: req.GetSetting().GetMaxAmount()})
+	got, err := s.uc.Update(ctx, &biz.Setting{Currency: req.GetCurrency(), MaxAmount: req.GetMaxAmount()})
 	if err != nil {
 		return nil, err
 	}

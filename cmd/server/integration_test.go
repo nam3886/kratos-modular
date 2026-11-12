@@ -77,7 +77,7 @@ func TestPaymentFlow(t *testing.T) {
 		return res.StatusCode, out
 	}
 
-	if code, _ := call("PUT", "/v1/settings/usd", `{"currency":"USD","max_amount":1000}`); code != 200 {
+	if code, _ := call("PUT", "/v1/settings/usd", `{"max_amount":1000}`); code != 200 {
 		t.Fatalf("update setting: %d", code)
 	}
 	code, payment := call("POST", "/v1/payments", `{"amount":500,"currency":"usd"}`)

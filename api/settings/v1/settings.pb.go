@@ -172,7 +172,8 @@ func (x *GetSettingRequest) GetCurrency() string {
 
 type UpdateSettingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Setting       *Setting               `protobuf:"bytes,1,opt,name=setting,proto3" json:"setting,omitempty"`
+	Currency      string                 `protobuf:"bytes,1,opt,name=currency,proto3" json:"currency,omitempty"`
+	MaxAmount     int64                  `protobuf:"varint,2,opt,name=max_amount,json=maxAmount,proto3" json:"max_amount,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -207,11 +208,18 @@ func (*UpdateSettingRequest) Descriptor() ([]byte, []int) {
 	return file_settings_v1_settings_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *UpdateSettingRequest) GetSetting() *Setting {
+func (x *UpdateSettingRequest) GetCurrency() string {
 	if x != nil {
-		return x.Setting
+		return x.Currency
 	}
-	return nil
+	return ""
+}
+
+func (x *UpdateSettingRequest) GetMaxAmount() int64 {
+	if x != nil {
+		return x.MaxAmount
+	}
+	return 0
 }
 
 var File_settings_v1_settings_proto protoreflect.FileDescriptor
@@ -224,18 +232,20 @@ const file_settings_v1_settings_proto_rawDesc = "" +
 	"\n" +
 	"max_amount\x18\x02 \x01(\x03R\tmaxAmount\"4\n" +
 	"\x11GetSettingRequest\x12\x1f\n" +
-	"\bcurrency\x18\x01 \x01(\tB\x03\xe0A\x02R\bcurrency\"K\n" +
-	"\x14UpdateSettingRequest\x123\n" +
-	"\asetting\x18\x01 \x01(\v2\x14.settings.v1.SettingB\x03\xe0A\x02R\asetting*\x80\x01\n" +
+	"\bcurrency\x18\x01 \x01(\tB\x03\xe0A\x02R\bcurrency\"Q\n" +
+	"\x14UpdateSettingRequest\x12\x1a\n" +
+	"\bcurrency\x18\x01 \x01(\tR\bcurrency\x12\x1d\n" +
+	"\n" +
+	"max_amount\x18\x02 \x01(\x03R\tmaxAmount*\x80\x01\n" +
 	"\vErrorReason\x12\x1c\n" +
 	"\x18ERROR_REASON_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11SETTING_NOT_FOUND\x10\x01\x12\x1c\n" +
 	"\x18SETTING_CURRENCY_INVALID\x10\x02\x12\x1e\n" +
-	"\x1aSETTING_MAX_AMOUNT_INVALID\x10\x032\xf2\x01\n" +
+	"\x1aSETTING_MAX_AMOUNT_INVALID\x10\x032\xe4\x01\n" +
 	"\x0fSettingsService\x12c\n" +
 	"\n" +
-	"GetSetting\x12\x1e.settings.v1.GetSettingRequest\x1a\x14.settings.v1.Setting\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/settings/{currency}\x12z\n" +
-	"\rUpdateSetting\x12!.settings.v1.UpdateSettingRequest\x1a\x14.settings.v1.Setting\"0\x82\xd3\xe4\x93\x02*:\asetting\x1a\x1f/v1/settings/{setting.currency}B6Z4github.com/nam3886/kratos-modular/api/settings/v1;v1b\x06proto3"
+	"GetSetting\x12\x1e.settings.v1.GetSettingRequest\x1a\x14.settings.v1.Setting\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/settings/{currency}\x12l\n" +
+	"\rUpdateSetting\x12!.settings.v1.UpdateSettingRequest\x1a\x14.settings.v1.Setting\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\x1a\x17/v1/settings/{currency}B6Z4github.com/nam3886/kratos-modular/api/settings/v1;v1b\x06proto3"
 
 var (
 	file_settings_v1_settings_proto_rawDescOnce sync.Once
@@ -258,16 +268,15 @@ var file_settings_v1_settings_proto_goTypes = []any{
 	(*UpdateSettingRequest)(nil), // 3: settings.v1.UpdateSettingRequest
 }
 var file_settings_v1_settings_proto_depIdxs = []int32{
-	1, // 0: settings.v1.UpdateSettingRequest.setting:type_name -> settings.v1.Setting
-	2, // 1: settings.v1.SettingsService.GetSetting:input_type -> settings.v1.GetSettingRequest
-	3, // 2: settings.v1.SettingsService.UpdateSetting:input_type -> settings.v1.UpdateSettingRequest
-	1, // 3: settings.v1.SettingsService.GetSetting:output_type -> settings.v1.Setting
-	1, // 4: settings.v1.SettingsService.UpdateSetting:output_type -> settings.v1.Setting
-	3, // [3:5] is the sub-list for method output_type
-	1, // [1:3] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	2, // 0: settings.v1.SettingsService.GetSetting:input_type -> settings.v1.GetSettingRequest
+	3, // 1: settings.v1.SettingsService.UpdateSetting:input_type -> settings.v1.UpdateSettingRequest
+	1, // 2: settings.v1.SettingsService.GetSetting:output_type -> settings.v1.Setting
+	1, // 3: settings.v1.SettingsService.UpdateSetting:output_type -> settings.v1.Setting
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_settings_v1_settings_proto_init() }
