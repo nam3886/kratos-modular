@@ -9,6 +9,7 @@ package main
 import (
 	"github.com/go-kratos/kratos/v3"
 	"github.com/nam3886/kratos-modular/internal/conf"
+	"github.com/nam3886/kratos-modular/internal/module/payment"
 	"github.com/nam3886/kratos-modular/internal/module/settings"
 	"github.com/nam3886/kratos-modular/internal/platform/db"
 	"github.com/nam3886/kratos-modular/internal/platform/mq"
@@ -33,7 +34,13 @@ func wireApp(confServer *conf.Server, data *conf.Data, logger *slog.Logger) (*kr
 		cleanup()
 		return nil, nil, err
 	}
-	v := registrars(module)
+	settingsServiceServer := settingsAPI(module)
+	paymentModule, err := payment.New(manager, settingsServiceServer)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	v := registrars(module, paymentModule)
 	grpcServer := server.NewGRPCServer(confServer, metrics, v)
 	httpServer := server.NewHTTPServer(confServer, metrics, v)
 	mqMQ, cleanup2, err := mq.New(data, manager, logger)
@@ -41,7 +48,7 @@ func wireApp(confServer *conf.Server, data *conf.Data, logger *slog.Logger) (*kr
 		cleanup()
 		return nil, nil, err
 	}
-	v2 := consumers()
+	v2 := consumers(paymentModule)
 	messaging, err := server.NewMessaging(mqMQ, v2)
 	if err != nil {
 		cleanup2()

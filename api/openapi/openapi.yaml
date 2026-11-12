@@ -3,10 +3,45 @@
 
 openapi: 3.0.3
 info:
-    title: SettingsService API
-    description: SettingsService owns the per-currency payment limits.
+    title: ""
     version: 0.0.1
 paths:
+    /v1/payments:
+        post:
+            tags:
+                - PaymentService
+            operationId: PaymentService_CreatePayment
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/payment.v1.Payment'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/payment.v1.Payment'
+    /v1/payments/{id}:
+        get:
+            tags:
+                - PaymentService
+            operationId: PaymentService_GetPayment
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/payment.v1.Payment'
     /v1/settings/{currency}:
         get:
             tags:
@@ -51,6 +86,22 @@ paths:
                                 $ref: '#/components/schemas/settings.v1.Setting'
 components:
     schemas:
+        payment.v1.Payment:
+            required:
+                - amount
+                - currency
+            type: object
+            properties:
+                id:
+                    readOnly: true
+                    type: string
+                amount:
+                    type: string
+                currency:
+                    type: string
+                status:
+                    readOnly: true
+                    type: string
         settings.v1.Setting:
             required:
                 - currency
@@ -61,4 +112,6 @@ components:
                 maxAmount:
                     type: string
 tags:
+    - name: PaymentService
     - name: SettingsService
+      description: SettingsService owns the per-currency payment limits.

@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package payment.v1;
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+
+option go_package = "github.com/nam3886/kratos-modular/api/payment/v1;v1";
+
+service PaymentService {
+  rpc CreatePayment (CreatePaymentRequest) returns (Payment) {
+    option (google.api.http) = {
+      post: "/v1/payments"
+      body: "payment"
+    };
+  }
+  rpc GetPayment (GetPaymentRequest) returns (Payment) {
+    option (google.api.http) = {get: "/v1/payments/{id}"};
+  }
+}
+
+message Payment {
+  string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 amount = 2 [(google.api.field_behavior) = REQUIRED];
+  string currency = 3 [(google.api.field_behavior) = REQUIRED];
+  string status = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message CreatePaymentRequest {
+  Payment payment = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetPaymentRequest {
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+enum ErrorReason {
+  ERROR_REASON_UNSPECIFIED = 0;
+  PAYMENT_NOT_FOUND = 1;
+  PAYMENT_INVALID_ARGUMENT = 2;
+  PAYMENT_LIMIT_EXCEEDED = 3;
+}
