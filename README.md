@@ -20,7 +20,6 @@ Go 1.27, Docker (local services and tests), and the tools installed by `make ini
 ## Quick start
 
 ```sh
-go mod tidy       # first time only: resolves and records dependency versions
 make init         # install buf, golangci-lint
 make up           # PostgreSQL and RabbitMQ
 make migrate      # create the tables
