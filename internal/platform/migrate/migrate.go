@@ -25,7 +25,7 @@ func Up(ctx context.Context, dbs *db.Manager, log *slog.Logger) error {
 		if err != nil {
 			return err
 		}
-		p, err := goose.NewProvider(goose.DialectPostgres, d.Pool, dir)
+		p, err := goose.NewProvider(goose.DialectPostgres, d.Pool, dir, goose.WithAllowOutofOrder(true))
 		if errors.Is(err, goose.ErrNoMigrations) {
 			log.Info("no migrations", "database", d.Name)
 			continue

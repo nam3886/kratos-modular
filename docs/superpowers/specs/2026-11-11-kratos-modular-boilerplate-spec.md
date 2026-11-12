@@ -550,7 +550,7 @@ func (m *MQ) Stop(context.Context) error
 Hành vi bắt buộc:
 
 - **Cấu hình AMQP**: `amqp.NewDurablePubSubConfig(url, amqp.GenerateQueueNameTopicNameWithSuffix(consumer))` và đặt `cfg.Publish.ConfirmDelivery = true`. Kết quả: mỗi topic một exchange fanout bền, mỗi consumer một queue bền tên `<topic>_<consumer>`.
-- **`New`**: tạo một `amqp.Publisher`; tạo `message.Router` với middleware theo thứ tự `PoisonQueueWithFilter(pub, PoisonTopic, err => !errors.Is(err, context.Canceled))` (chỉ `Canceled`, không phải `DeadlineExceeded`; message bị ngắt do shutdown được broker giao lại thay vì vào poison), `Retry{MaxRetries: 3, InitialInterval: 100ms, Multiplier: 2}`, `Recoverer`; với **mỗi** database tạo một forwarder: `wsql.NewSubscriber(wsql.BeginnerFromStdSQL(pool), SubscriberConfig{SchemaAdapter: outboxSchema(), OffsetsAdapter: wsql.PostgreSQLQueueOffsetsAdapter{DeleteOnAck: true}, PollInterval: 200ms})` rồi `forwarder.NewForwarder(sub, pub, logger, forwarder.Config{ForwarderTopic: outboxTopic})`. `New` không tạo bảng, nhưng khai báo queue bền `poison_poison` gắn với exchange `poison` (tạo `amqp.Subscriber` với `config(url, "poison")`, `SubscribeInitialize(PoisonTopic)`, rồi đóng). Logger là `watermill.NewSlogLogger(log)`. cleanup đóng publisher.
+- **`New`**: tạo một `amqp.Publisher`; tạo `message.Router` với middleware theo thứ tự `PoisonQueueWithFilter(pub, PoisonTopic, err => !errors.Is(err, context.Canceled))` (chỉ `Canceled`, không phải `DeadlineExceeded`; message bị ngắt do shutdown được broker giao lại thay vì vào poison), `Retry{MaxRetries: 3, InitialInterval: 100ms, MaxInterval: 1s, Multiplier: 2}`, `Recoverer`; với **mỗi** database tạo một forwarder: `wsql.NewSubscriber(wsql.BeginnerFromStdSQL(pool), SubscriberConfig{SchemaAdapter: outboxSchema(), OffsetsAdapter: wsql.PostgreSQLQueueOffsetsAdapter{DeleteOnAck: true}, PollInterval: 200ms})` rồi `forwarder.NewForwarder(sub, pub, logger, forwarder.Config{ForwarderTopic: outboxTopic})`. `New` không tạo bảng, nhưng khai báo queue bền `poison_poison` gắn với exchange `poison` (tạo `amqp.Subscriber` với `config(url, "poison")`, `SubscribeInitialize(PoisonTopic)`, rồi đóng). Logger là `watermill.NewSlogLogger(log)`. cleanup đóng publisher.
 - **`Handle`**: tạo một `amqp.Subscriber` riêng, gọi ngay `sub.SubscribeInitialize(topic)` để khai báo queue trước khi ứng dụng nhận request, rồi `router.AddConsumerHandler(consumer+":"+topic, topic, sub, ...)`.
 - **`Start`**: chạy mọi `forwarder.Run(ctx)` và `router.Run(ctx)` trong goroutine, chặn cho tới khi tất cả kết thúc. Context dẫn xuất bằng `context.WithCancel(context.WithoutCancel(ctx))`. Lỗi khác `context.Canceled` thì hủy tất cả và trả về lỗi gộp.
 - **`Stop`**: hủy context, `Close` từng forwarder và router, chờ goroutine, rồi đóng các subscriber.
@@ -561,7 +561,7 @@ Hành vi bắt buộc:
 // Up đưa mọi database lên phiên bản mới nhất. Với từng database:
 //  1. mq.InitTables(ctx, pool)
 //  2. dir := fs.Sub(migrations.FS, d.Name)
-//  3. goose.NewProvider(goose.DialectPostgres, pool, dir); goose.ErrNoMigrations thì bỏ qua
+//  3. goose.NewProvider(goose.DialectPostgres, pool, dir, goose.WithAllowOutofOrder(true)); goose.ErrNoMigrations thì bỏ qua
 //  4. p.Up(ctx), log từng file đã áp dụng
 func Up(ctx context.Context, dbs *db.Manager, log *slog.Logger) error
 ```

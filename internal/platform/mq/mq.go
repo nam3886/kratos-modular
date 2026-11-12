@@ -76,7 +76,7 @@ func New(c *conf.Data, dbs *db.Manager, log *slog.Logger) (*MQ, func(), error) {
 	_ = ps.Close()
 	router.AddMiddleware(
 		poison,
-		middleware.Retry{MaxRetries: 3, InitialInterval: 100 * time.Millisecond, Multiplier: 2, Logger: logger}.Middleware,
+		middleware.Retry{MaxRetries: 3, InitialInterval: 100 * time.Millisecond, MaxInterval: time.Second, Multiplier: 2, Logger: logger}.Middleware,
 		middleware.Recoverer,
 	)
 	m := &MQ{url: url, logger: logger, publisher: pub, router: router}
@@ -137,7 +137,8 @@ func (m *MQ) Start(ctx context.Context) error {
 	return errors.Join(errs...)
 }
 
-// Stop lets in-flight messages finish and stops forwarding and consuming.
+// Stop cancels in-flight handlers and stops forwarding and consuming. Their
+// messages are redelivered after restart, so handlers must be idempotent.
 func (m *MQ) Stop(context.Context) error {
 	m.mu.Lock()
 	if m.cancel != nil {
