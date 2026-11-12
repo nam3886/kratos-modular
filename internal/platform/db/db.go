@@ -5,9 +5,13 @@ package db
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 
+	"github.com/XSAM/otelsql"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/nam3886/kratos-modular/internal/conf"
 )
@@ -31,7 +35,17 @@ func Open(c *conf.Data) (*Manager, func(), error) {
 		}
 	}
 	for name, dc := range c.GetDatabases() {
-		pool, err := sql.Open(dc.GetDriver(), dc.GetSource())
+		pool, err := otelsql.Open(dc.GetDriver(), dc.GetSource(), otelsql.WithAttributes(semconv.DBSystemPostgreSQL, semconv.DBNamespace(name)),
+			// Only statements that belong to a request or a message are traced;
+			// the outbox poll would otherwise add a trace every 200ms.
+			otelsql.WithSpanOptions(otelsql.SpanOptions{
+				OmitConnResetSession: true,
+				OmitConnectorConnect: true,
+				OmitRows:             true,
+				SpanFilter: func(ctx context.Context, _ otelsql.Method, _ string, _ []driver.NamedValue) bool {
+					return trace.SpanContextFromContext(ctx).IsValid()
+				},
+			}))
 		if err != nil {
 			cleanup()
 			return nil, nil, fmt.Errorf("open database %q: %w", name, err)

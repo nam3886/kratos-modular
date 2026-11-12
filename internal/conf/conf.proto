@@ -9,6 +9,13 @@ option go_package = "github.com/nam3886/kratos-modular/internal/conf;conf";
 message Bootstrap {
   Server server = 1;
   Data data = 2;
+  Trace trace = 3;
+}
+
+message Trace {
+  // OTLP/gRPC address of the trace collector, e.g. "localhost:4317".
+  // Empty: traces are not exported; logs still carry trace ids.
+  string endpoint = 1;
 }
 
 message Server {

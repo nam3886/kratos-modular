@@ -83,6 +83,7 @@ func New(c *conf.Data, dbs *db.Manager, log *slog.Logger, registry *prometheus.R
 		return nil, nil, err
 	}
 	router.AddMiddleware(
+		trace,
 		poison,
 		middleware.Retry{MaxRetries: 3, InitialInterval: 100 * time.Millisecond, MaxInterval: time.Second, Multiplier: 2, Logger: logger}.Middleware,
 		middleware.Recoverer,

@@ -7,6 +7,7 @@ import (
 	"github.com/nam3886/kratos-modular/internal/conf"
 	"github.com/nam3886/kratos-modular/internal/platform/db"
 
+	"github.com/go-kratos/kratos/contrib/otel/v3/tracing"
 	"github.com/go-kratos/kratos/v3/middleware/recovery"
 	"github.com/go-kratos/kratos/v3/transport/http"
 )
@@ -28,6 +29,7 @@ func NewHTTPServer(c *conf.Server, logger *slog.Logger, m *Metrics, dbs *db.Mana
 		})),
 		http.Middleware(
 			recovery.Recovery(),
+			tracing.Server(),
 			requestLog(logger),
 			m.middleware,
 			hideInternal,

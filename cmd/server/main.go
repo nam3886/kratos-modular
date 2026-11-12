@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log/slog"
 	"os"
@@ -72,6 +73,12 @@ func main() {
 	if err := c.Scan(&bc); err != nil {
 		panic(err)
 	}
+
+	stopTracing, err := server.SetupTracing(context.Background(), bc.Trace, Name, Version)
+	if err != nil {
+		panic(err)
+	}
+	defer stopTracing()
 
 	app, cleanup, err := wireApp(bc.Server, bc.Data, logger)
 	if err != nil {

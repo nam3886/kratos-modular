@@ -13,3 +13,6 @@ data:
       max_open_conns: 20
   rabbitmq:
     url: amqp://guest:guest@127.0.0.1:5672/
+
+trace:
+  endpoint: ""

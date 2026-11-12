@@ -45,6 +45,7 @@ func Publish(ctx context.Context, tx Execer, id string, event proto.Message) err
 	pub := forwarder.NewPublisher(sqlPub, forwarder.PublisherConfig{ForwarderTopic: outboxTopic})
 	msg := message.NewMessage(id, payload)
 	msg.SetContext(ctx)
+	inject(ctx, msg)
 	return pub.Publish(Topic(event), msg)
 }
 
