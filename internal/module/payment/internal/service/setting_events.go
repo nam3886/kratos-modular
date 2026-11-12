@@ -10,17 +10,14 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// SettingEvents handles events published by the settings module.
 type SettingEvents struct {
 	uc *biz.PaymentUsecase
 }
 
-// NewSettingEvents new the settings event handlers.
 func NewSettingEvents(uc *biz.PaymentUsecase) *SettingEvents {
 	return &SettingEvents{uc: uc}
 }
 
-// OnSettingChanged handles settings.v1.SettingChanged.
 func (h *SettingEvents) OnSettingChanged(ctx context.Context, msg *message.Message) error {
 	var event settingsv1.SettingChanged
 	if err := proto.Unmarshal(msg.Payload, &event); err != nil {

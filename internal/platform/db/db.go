@@ -12,14 +12,12 @@ import (
 	"github.com/nam3886/kratos-modular/internal/conf"
 )
 
-// Database is one named, shared connection pool.
 type Database struct {
 	Name  string
 	Pool  *sql.DB
 	Debug bool
 }
 
-// Manager holds the pools of all configured databases.
 type Manager struct {
 	dbs map[string]*Database
 }
@@ -50,7 +48,6 @@ func Open(c *conf.Data) (*Manager, func(), error) {
 	return m, cleanup, nil
 }
 
-// Get returns the named database.
 func (m *Manager) Get(name string) (*Database, error) {
 	d, ok := m.dbs[name]
 	if !ok {
@@ -59,7 +56,6 @@ func (m *Manager) Get(name string) (*Database, error) {
 	return d, nil
 }
 
-// All returns every configured database.
 func (m *Manager) All() []*Database {
 	out := make([]*Database, 0, len(m.dbs))
 	for _, d := range m.dbs {

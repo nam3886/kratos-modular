@@ -7,10 +7,8 @@ import (
 	"github.com/gorilla/handlers"
 )
 
-// defaultMaxBodyBytes applies when the config sets no limit.
 const defaultMaxBodyBytes = 1 << 20
 
-// cors lets browsers on the given origins call the API.
 func cors(origins []string) http.FilterFunc {
 	return handlers.CORS(
 		handlers.AllowedOrigins(origins),
@@ -19,7 +17,6 @@ func cors(origins []string) http.FilterFunc {
 	)
 }
 
-// bodyLimit rejects request bodies larger than limit bytes.
 func bodyLimit(limit int64) http.FilterFunc {
 	if limit <= 0 {
 		limit = defaultMaxBodyBytes

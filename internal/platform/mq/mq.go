@@ -106,7 +106,6 @@ func (m *MQ) Handle(consumer, topic string, h Handler) error {
 	return nil
 }
 
-// Start runs the forwarders and the consumers until Stop is called.
 func (m *MQ) Start(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	m.mu.Lock()

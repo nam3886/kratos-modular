@@ -47,12 +47,10 @@ func Publish(ctx context.Context, tx Execer, id string, event proto.Message) err
 	return pub.Publish(Topic(event), msg)
 }
 
-// Topic is the topic an event is published on.
 func Topic(event proto.Message) string {
 	return string(event.ProtoReflect().Descriptor().FullName())
 }
 
-// InitTables creates the outbox and inbox tables in one database.
 func InitTables(ctx context.Context, pool *sql.DB) error {
 	queries, err := outboxSchema().SchemaInitializingQueries(wsql.SchemaInitializingQueriesParams{Topic: outboxTopic})
 	if err != nil {

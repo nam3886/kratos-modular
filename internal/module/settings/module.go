@@ -10,7 +10,6 @@ import (
 	"github.com/nam3886/kratos-modular/internal/module/settings/internal/service"
 )
 
-// Module is the assembled settings module.
 type Module struct {
 	svc *service.SettingsService
 }
@@ -22,8 +21,6 @@ func newModule(svc *service.SettingsService) *Module {
 // API is what other modules call, in process.
 func (m *Module) API() v1.SettingsServiceServer { return m.svc }
 
-// RegisterHTTP mounts the module's HTTP routes.
 func (m *Module) RegisterHTTP(srv *http.Server) { v1.RegisterSettingsServiceHTTPServer(srv, m.svc) }
 
-// RegisterGRPC mounts the module's gRPC service.
 func (m *Module) RegisterGRPC(srv *grpc.Server) { v1.RegisterSettingsServiceServer(srv, m.svc) }

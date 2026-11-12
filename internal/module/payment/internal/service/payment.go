@@ -8,14 +8,12 @@ import (
 	"github.com/nam3886/kratos-modular/internal/module/payment/internal/biz"
 )
 
-// PaymentService implements api/payment/v1.
 type PaymentService struct {
 	v1.UnimplementedPaymentServiceServer
 
 	uc *biz.PaymentUsecase
 }
 
-// NewPaymentService new a payment service.
 func NewPaymentService(uc *biz.PaymentUsecase) *PaymentService {
 	return &PaymentService{uc: uc}
 }

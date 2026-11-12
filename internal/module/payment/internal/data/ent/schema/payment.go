@@ -6,7 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// Payment is one payment.
 type Payment struct {
 	ent.Schema
 }

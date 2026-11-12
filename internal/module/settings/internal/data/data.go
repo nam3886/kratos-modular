@@ -16,7 +16,6 @@ import (
 // database is the name of the configured database this module stores into.
 const database = "main"
 
-// ProviderSet is data providers.
 var ProviderSet = wire.NewSet(NewData, NewSettingRepo)
 
 // Data holds the module's ent client. The client runs on the shared pool of
@@ -25,7 +24,6 @@ type Data struct {
 	db *ent.Client
 }
 
-// NewData builds the module's ent client on its database.
 func NewData(dbs *db.Manager) (*Data, error) {
 	d, err := dbs.Get(database)
 	if err != nil {

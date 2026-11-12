@@ -16,7 +16,6 @@ import (
 	"github.com/nam3886/kratos-modular/migrations"
 )
 
-// Up applies all pending migrations to every database.
 func Up(ctx context.Context, dbs *db.Manager, log *slog.Logger) error {
 	for _, d := range dbs.All() {
 		if err := mq.InitTables(ctx, d.Pool); err != nil {

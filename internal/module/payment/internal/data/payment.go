@@ -16,7 +16,6 @@ type paymentRepo struct {
 	data *Data
 }
 
-// NewPaymentRepo returns the ent-backed biz.PaymentRepo.
 func NewPaymentRepo(data *Data) biz.PaymentRepo {
 	return &paymentRepo{data: data}
 }

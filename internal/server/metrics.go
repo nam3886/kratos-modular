@@ -19,7 +19,6 @@ type Metrics struct {
 	handler    nethttp.Handler
 }
 
-// NewMetrics new the request metrics, plus Go runtime and process metrics.
 func NewMetrics() (*Metrics, error) {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collectors.NewGoCollector(), collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))

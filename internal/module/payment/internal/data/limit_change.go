@@ -15,7 +15,6 @@ type limitChangeRepo struct {
 	data *Data
 }
 
-// NewLimitChangeRepo returns the ent-backed biz.LimitChangeRepo.
 func NewLimitChangeRepo(data *Data) biz.LimitChangeRepo {
 	return &limitChangeRepo{data: data}
 }

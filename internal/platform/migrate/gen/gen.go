@@ -17,7 +17,6 @@ import (
 	_ "github.com/lib/pq" // driver used by the diff engine
 )
 
-// Main parses the command line and writes the migration for tables.
 func Main(tables []*schema.Table) {
 	name := flag.String("name", "", "migration name, e.g. add_payment_note")
 	database := flag.String("db", "main", "configured database the module stores into")

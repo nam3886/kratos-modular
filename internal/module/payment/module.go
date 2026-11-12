@@ -12,7 +12,6 @@ import (
 	"github.com/nam3886/kratos-modular/internal/platform/mq"
 )
 
-// Module is the assembled payment module.
 type Module struct {
 	svc    *service.PaymentService
 	events *service.SettingEvents
@@ -22,13 +21,10 @@ func newModule(svc *service.PaymentService, events *service.SettingEvents) *Modu
 	return &Module{svc: svc, events: events}
 }
 
-// RegisterHTTP mounts the module's HTTP routes.
 func (m *Module) RegisterHTTP(srv *http.Server) { v1.RegisterPaymentServiceHTTPServer(srv, m.svc) }
 
-// RegisterGRPC mounts the module's gRPC service.
 func (m *Module) RegisterGRPC(srv *grpc.Server) { v1.RegisterPaymentServiceServer(srv, m.svc) }
 
-// RegisterConsumers subscribes the module to the events it handles.
 func (m *Module) RegisterConsumers(q *mq.MQ) error {
 	return q.Handle("payment", mq.Topic(&settingsv1.SettingChanged{}), m.events.OnSettingChanged)
 }

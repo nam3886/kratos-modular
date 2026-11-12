@@ -15,7 +15,6 @@ var (
 	mqErr  error
 )
 
-// RabbitMQURL returns the AMQP URL of the test RabbitMQ server.
 func RabbitMQURL(t testing.TB) string {
 	t.Helper()
 	mqOnce.Do(func() {

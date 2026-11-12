@@ -7,14 +7,12 @@ import (
 	"github.com/nam3886/kratos-modular/internal/module/settings/internal/biz"
 )
 
-// SettingsService implements api/settings/v1.
 type SettingsService struct {
 	v1.UnimplementedSettingsServiceServer
 
 	uc *biz.SettingUsecase
 }
 
-// NewSettingsService new a settings service.
 func NewSettingsService(uc *biz.SettingUsecase) *SettingsService {
 	return &SettingsService{uc: uc}
 }

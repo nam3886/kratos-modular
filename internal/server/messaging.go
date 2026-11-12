@@ -2,7 +2,6 @@ package server
 
 import "github.com/nam3886/kratos-modular/internal/platform/mq"
 
-// Messaging is the messaging server: forwarders and consumers.
 type Messaging struct {
 	*mq.MQ
 }

@@ -15,7 +15,6 @@ import (
 
 // Injectors from wire.go:
 
-// New assembles the module.
 func New(manager *db.Manager) (*Module, error) {
 	dataData, err := data.NewData(manager)
 	if err != nil {

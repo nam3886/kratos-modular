@@ -19,7 +19,6 @@ import (
 
 // Injectors from wire.go:
 
-// wireApp init kratos application.
 func wireApp(confServer *conf.Server, data *conf.Data, logger *slog.Logger) (*kratos.App, func(), error) {
 	metrics, err := server.NewMetrics()
 	if err != nil {

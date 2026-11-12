@@ -7,7 +7,6 @@ import (
 	"github.com/go-kratos/kratos/v3/transport/grpc"
 )
 
-// NewGRPCServer new a gRPC server and mounts every module on it.
 func NewGRPCServer(c *conf.Server, m *Metrics, modules []Registrar) *grpc.Server {
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(

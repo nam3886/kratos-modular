@@ -18,7 +18,6 @@ import (
 	"github.com/nam3886/kratos-modular/internal/server"
 )
 
-// wireApp init kratos application.
 func wireApp(*conf.Server, *conf.Data, *slog.Logger) (*kratos.App, func(), error) {
 	panic(wire.Build(
 		db.Open,

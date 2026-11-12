@@ -25,7 +25,6 @@ var (
 	pgErr  error
 )
 
-// PostgresURL returns the DSN of the test PostgreSQL server.
 func PostgresURL(t testing.TB) string {
 	t.Helper()
 	pgOnce.Do(func() {
@@ -82,7 +81,6 @@ func ResetPostgres(t testing.TB, dbs *db.Manager) {
 	}
 }
 
-// Count returns the number of rows in a table of the "main" database.
 func Count(t testing.TB, dbs *db.Manager, table string) int {
 	t.Helper()
 	main, err := dbs.Get("main")

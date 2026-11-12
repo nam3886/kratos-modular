@@ -2,20 +2,18 @@ package data
 
 import (
 	"context"
+	"uuid"
 
 	v1 "github.com/nam3886/kratos-modular/api/settings/v1"
 	"github.com/nam3886/kratos-modular/internal/module/settings/internal/biz"
 	"github.com/nam3886/kratos-modular/internal/module/settings/internal/data/ent"
 	"github.com/nam3886/kratos-modular/internal/platform/mq"
-
-	"github.com/google/uuid"
 )
 
 type settingRepo struct {
 	data *Data
 }
 
-// NewSettingRepo returns the ent-backed biz.SettingRepo.
 func NewSettingRepo(data *Data) biz.SettingRepo {
 	return &settingRepo{data: data}
 }
@@ -44,7 +42,7 @@ func (r *settingRepo) Save(ctx context.Context, s *biz.Setting) (*biz.Setting, e
 		if err != nil {
 			return err
 		}
-		return mq.Publish(ctx, tx, uuid.NewString(), &v1.SettingChanged{Currency: s.Currency, MaxAmount: s.MaxAmount})
+		return mq.Publish(ctx, tx, uuid.NewV7().String(), &v1.SettingChanged{Currency: s.Currency, MaxAmount: s.MaxAmount})
 	})
 	if err != nil {
 		return nil, err
