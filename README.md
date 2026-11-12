@@ -137,7 +137,9 @@ tests run `DROP SCHEMA public CASCADE` on it.
   runtime and process metrics.
 - Run `migrate` once per release, before the new server version starts.
 - Messages a consumer cannot handle after three retries go to the `poison`
-  exchange. Bind a queue to it, or they are dropped.
+  exchange, whose durable queue `poison_poison` is declared at startup. Replay
+  from it once the cause is fixed. A message interrupted by shutdown is not
+  poisoned: RabbitMQ redelivers it after restart.
 - A consumer's queue is declared when the application starts. Events published
   before a consumer's first start are not delivered to it.
 - JSON follows the protobuf JSON mapping, as the OpenAPI document describes it:

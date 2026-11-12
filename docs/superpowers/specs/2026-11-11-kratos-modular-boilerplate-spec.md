@@ -550,7 +550,7 @@ func (m *MQ) Stop(context.Context) error
 Hành vi bắt buộc:
 
 - **Cấu hình AMQP**: `amqp.NewDurablePubSubConfig(url, amqp.GenerateQueueNameTopicNameWithSuffix(consumer))` và đặt `cfg.Publish.ConfirmDelivery = true`. Kết quả: mỗi topic một exchange fanout bền, mỗi consumer một queue bền tên `<topic>_<consumer>`.
-- **`New`**: tạo một `amqp.Publisher`; tạo `message.Router` với middleware theo thứ tự `PoisonQueue(pub, PoisonTopic)`, `Retry{MaxRetries: 3, InitialInterval: 100ms, Multiplier: 2}`, `Recoverer`; với **mỗi** database tạo một forwarder: `wsql.NewSubscriber(wsql.BeginnerFromStdSQL(pool), SubscriberConfig{SchemaAdapter: outboxSchema(), OffsetsAdapter: wsql.PostgreSQLQueueOffsetsAdapter{DeleteOnAck: true}, PollInterval: 200ms})` rồi `forwarder.NewForwarder(sub, pub, logger, forwarder.Config{ForwarderTopic: outboxTopic})`. `New` không tạo bảng. Logger là `watermill.NewSlogLogger(log)`. cleanup đóng publisher.
+- **`New`**: tạo một `amqp.Publisher`; tạo `message.Router` với middleware theo thứ tự `PoisonQueueWithFilter(pub, PoisonTopic, err => !errors.Is(err, context.Canceled))` (chỉ `Canceled`, không phải `DeadlineExceeded`; message bị ngắt do shutdown được broker giao lại thay vì vào poison), `Retry{MaxRetries: 3, InitialInterval: 100ms, Multiplier: 2}`, `Recoverer`; với **mỗi** database tạo một forwarder: `wsql.NewSubscriber(wsql.BeginnerFromStdSQL(pool), SubscriberConfig{SchemaAdapter: outboxSchema(), OffsetsAdapter: wsql.PostgreSQLQueueOffsetsAdapter{DeleteOnAck: true}, PollInterval: 200ms})` rồi `forwarder.NewForwarder(sub, pub, logger, forwarder.Config{ForwarderTopic: outboxTopic})`. `New` không tạo bảng, nhưng khai báo queue bền `poison_poison` gắn với exchange `poison` (tạo `amqp.Subscriber` với `config(url, "poison")`, `SubscribeInitialize(PoisonTopic)`, rồi đóng). Logger là `watermill.NewSlogLogger(log)`. cleanup đóng publisher.
 - **`Handle`**: tạo một `amqp.Subscriber` riêng, gọi ngay `sub.SubscribeInitialize(topic)` để khai báo queue trước khi ứng dụng nhận request, rồi `router.AddConsumerHandler(consumer+":"+topic, topic, sub, ...)`.
 - **`Start`**: chạy mọi `forwarder.Run(ctx)` và `router.Run(ctx)` trong goroutine, chặn cho tới khi tất cả kết thúc. Context dẫn xuất bằng `context.WithCancel(context.WithoutCancel(ctx))`. Lỗi khác `context.Canceled` thì hủy tất cả và trả về lỗi gộp.
 - **`Stop`**: hủy context, `Close` từng forwarder và router, chờ goroutine, rồi đóng các subscriber.
@@ -1376,7 +1376,7 @@ volumes:
 
 **`.gitignore`**: `bin/`, `*.exe`, `*.test`, `*.out`, `vendor/`, `go.work`, `go.work.sum`, `.idea/`, `.vscode/`, `.DS_Store`.
 
-**`README.md`** (tiếng Anh, ngắn) gồm các mục: giới thiệu một đoạn; Requirements; Quick start (`go mod tidy`, `make init`, `make up`, `make migrate`, `make run`, ba lệnh `curl` mẫu); Layout; How modules relate (năm quy tắc ở mục 4); Adding a module; Changing the schema; Tests; Configuration; Operations (chạy `migrate` trước server, exchange `poison` cần queue, queue consumer khai báo lúc khởi động, quy ước JSON).
+**`README.md`** (tiếng Anh, ngắn) gồm các mục: giới thiệu một đoạn; Requirements; Quick start (`go mod tidy`, `make init`, `make up`, `make migrate`, `make run`, ba lệnh `curl` mẫu); Layout; How modules relate (năm quy tắc ở mục 4); Adding a module; Changing the schema; Tests; Configuration; Operations (chạy `migrate` trước server, queue `poison_poison` có sẵn để replay, queue consumer khai báo lúc khởi động, quy ước JSON).
 
 ## 15. Bẫy đã biết
 
@@ -1394,7 +1394,7 @@ Mỗi mục dưới đây là một lỗi đã gặp thật khi dựng bản tha
 | 8 | `field.UUID` của Ent đòi `driver.Valuer`, kiểu `uuid.UUID` của thư viện chuẩn không có | Schema dùng `github.com/google/uuid`; `biz` dùng `uuid` chuẩn; ép kiểu ở `data` |
 | 9 | Event gửi lên exchange fanout chưa có queue nào: RabbitMQ xác nhận rồi bỏ, dòng outbox bị xóa | `MQ.Handle` gọi `SubscribeInitialize` ngay khi đăng ký, trước khi ứng dụng chạy |
 | 10 | Forwarder gửi theo lô và chỉ xóa khi xong lô: dừng hoặc sập giữa lô làm gửi lại | Mọi handler dùng `mq.FirstTime` trong cùng transaction với thay đổi của nó |
-| 11 | Message lỗi chuyển sang exchange `poison` chưa có queue thì mất | Ghi rõ trong README; vận hành phải bind một queue |
+| 11 | Message lỗi chuyển sang exchange `poison` chưa có queue thì mất | `New` khai báo queue bền `poison_poison`; vận hành replay từ đó |
 | 12 | Tạo bảng outbox trong `mq.New`: test tầng `data` buộc phải có RabbitMQ | `InitTables` là hàm riêng, gọi từ `migrate.Up` |
 | 13 | `//go:embed */*.sql` lỗi biên dịch khi chưa có file `.sql` nào | Sinh migration đầu tiên trước khi build `migrations` |
 | 14 | Trình sinh migration từ chối chạy khi `atlas.sum` không khớp (do file viết tay) | Ghi lại checksum trước khi so sánh (mục 12) |
@@ -1466,7 +1466,7 @@ Bản triển khai chỉ được coi là xong khi mọi mục dưới đây đ�
 
 - [ ] Dừng RabbitMQ, gửi 100 lần `PUT /v1/settings/usd`: cả 100 trả 200, `watermill_outbox` có 100 dòng
 - [ ] Bật lại RabbitMQ, `kill -9` server khi đang chuyển tiếp, khởi động lại: `limit_changes` tăng đúng 100, `watermill_outbox` về 0
-- [ ] Gửi thẳng lên exchange `settings.v1.SettingChanged` một message không phải proto hợp lệ, sau khi đã bind một queue vào exchange `poison`: log có 3 lần thử lại, message xuất hiện ở queue poison, message hợp lệ gửi sau vẫn được xử lý
+- [ ] Gửi thẳng lên exchange `settings.v1.SettingChanged` một message không phải proto hợp lệ: log có 3 lần thử lại, message xuất hiện ở queue `poison_poison`, message hợp lệ gửi sau vẫn được xử lý
 - [ ] `SIGTERM` server: thoát trong vài giây, không còn kết nối PostgreSQL nào của ứng dụng
 
 **F. Vận hành**

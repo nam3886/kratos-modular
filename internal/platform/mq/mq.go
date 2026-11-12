@@ -60,10 +60,20 @@ func New(c *conf.Data, dbs *db.Manager, log *slog.Logger) (*MQ, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	poison, err := middleware.PoisonQueue(pub, PoisonTopic)
+	// A context cancelled by shutdown is not a poison message: leave it
+	// unacked so the broker redelivers it after restart.
+	poison, err := middleware.PoisonQueueWithFilter(pub, PoisonTopic, func(err error) bool { return !errors.Is(err, context.Canceled) })
 	if err != nil {
 		return nil, nil, err
 	}
+	ps, err := amqp.NewSubscriber(config(url, PoisonTopic), logger)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := ps.SubscribeInitialize(PoisonTopic); err != nil {
+		return nil, nil, fmt.Errorf("declare poison queue: %w", err)
+	}
+	_ = ps.Close()
 	router.AddMiddleware(
 		poison,
 		middleware.Retry{MaxRetries: 3, InitialInterval: 100 * time.Millisecond, Multiplier: 2, Logger: logger}.Middleware,

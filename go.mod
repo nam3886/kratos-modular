@@ -17,6 +17,7 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/pressly/goose/v3 v3.26.0
 	github.com/prometheus/client_golang v1.24.1
+	github.com/rabbitmq/amqp091-go v1.11.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.45.0
 	github.com/testcontainers/testcontainers-go/modules/rabbitmq v0.45.0
 	go.einride.tech/aip v0.86.3
@@ -101,7 +102,6 @@ require (
 	github.com/prometheus/common v0.72.0 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.23.0 // indirect
-	github.com/rabbitmq/amqp091-go v1.11.0 // indirect
 	github.com/sethvargo/go-retry v0.5.0 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.6 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect
