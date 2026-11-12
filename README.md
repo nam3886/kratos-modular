@@ -37,6 +37,13 @@ curl localhost:8000/metrics
 
 `make help` lists every target.
 
+## Use it as a template
+
+1. Rename the module: `go mod edit -module example.com/acme/shop`
+2. Rewrite the import paths:
+   `git grep -lF github.com/nam3886/kratos-modular -- '*.go' '*.proto' .golangci.yml | xargs perl -pi -e 's#github\.com/nam3886/kratos-modular#example.com/acme/shop#g'`
+3. Regenerate the code that embeds the old path: `make generate`
+
 ## Layout
 
 ```

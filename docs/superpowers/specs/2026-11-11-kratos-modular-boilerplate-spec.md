@@ -1375,7 +1375,7 @@ volumes:
 
 **`.gitignore`**: `bin/`, `*.exe`, `*.test`, `*.out`, `vendor/`, `go.work`, `go.work.sum`, `.idea/`, `.vscode/`, `.DS_Store`.
 
-**`README.md`** (tiếng Anh, ngắn) gồm các mục: giới thiệu một đoạn; Requirements; Quick start (`go mod tidy`, `make init`, `make up`, `make migrate`, `make run`, ba lệnh `curl` mẫu); Layout; How modules relate (năm quy tắc ở mục 4); Adding a module; Changing the schema; Tests; Configuration; Operations (chạy `migrate` trước server, queue `poison_poison` có sẵn để replay, queue consumer khai báo lúc khởi động, quy ước JSON).
+**`README.md`** (tiếng Anh, ngắn) gồm các mục: giới thiệu một đoạn; Requirements; Quick start (`go mod tidy`, `make init`, `make up`, `make migrate`, `make run`, ba lệnh `curl` mẫu); Use it as a template (ba bước: `go mod edit -module <mới>`, một lệnh `git grep -l ... | xargs perl -pi -e` đổi import path trong `*.go`, `*.proto`, `.golangci.yml`, rồi `make generate`); Layout; How modules relate (năm quy tắc ở mục 4); Adding a module; Changing the schema; Tests; Configuration; Operations (chạy `migrate` trước server, queue `poison_poison` có sẵn để replay, queue consumer khai báo lúc khởi động, quy ước JSON).
 
 ## 15. Bẫy đã biết
 
