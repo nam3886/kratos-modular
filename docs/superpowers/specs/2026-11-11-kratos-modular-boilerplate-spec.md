@@ -100,7 +100,7 @@ kratos-modular/
 │       ├── <timestamp>_settings_init.sql
 │       ├── <timestamp>_payment_init.sql
 │       └── atlas.sum
-├── deploy/postgres/init.sql            # CREATE DATABASE app_dev (cho docker-compose)
+├── deploy/postgres/init.sql            # CREATE DATABASE app_dev, app_test (cho docker-compose)
 ├── internal/
 │   ├── conf/
 │   │   ├── conf.proto
@@ -1271,7 +1271,7 @@ Dùng gì thì test bằng cái đó: test tầng `data` và test tích hợp ch
 **Chạy test**
 
 - `go test ./...` và `go test -tags integration ./...` tự khởi động container; mỗi package test có container riêng nên chạy song song được.
-- Khi đặt `TEST_DATABASE_URL` và `TEST_RABBITMQ_URL`, các package dùng chung một database nên phải thêm `-p 1`.
+- Khi đặt `TEST_DATABASE_URL` và `TEST_RABBITMQ_URL`, các package dùng chung một database nên phải thêm `-p 1`. Tên database trong `TEST_DATABASE_URL` phải chứa `test`, nếu không `PostgresURL` báo lỗi (test xóa sạch schema `public`).
 
 ## 14. Công cụ
 
@@ -1371,7 +1371,7 @@ volumes:
   postgres:
 ```
 
-`deploy/postgres/init.sql` chỉ có `CREATE DATABASE app_dev;` (database trống cho `make migration`).
+`deploy/postgres/init.sql` chỉ có `CREATE DATABASE app_dev;` (database trống cho `make migration`) và `CREATE DATABASE app_test;` (database dùng một lần cho `TEST_DATABASE_URL`).
 
 **`.gitignore`**: `bin/`, `*.exe`, `*.test`, `*.out`, `vendor/`, `go.work`, `go.work.sum`, `.idea/`, `.vscode/`, `.DS_Store`.
 

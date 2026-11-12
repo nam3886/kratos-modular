@@ -6,9 +6,12 @@ package testkit
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
+	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 
@@ -29,6 +32,10 @@ func PostgresURL(t testing.TB) string {
 	t.Helper()
 	pgOnce.Do(func() {
 		if pgURL = os.Getenv("TEST_DATABASE_URL"); pgURL != "" {
+			// Tests drop the whole public schema.
+			if u, err := url.Parse(pgURL); err != nil || !strings.Contains(u.Path, "test") {
+				pgErr = fmt.Errorf("TEST_DATABASE_URL must name a database containing %q, because tests wipe it", "test")
+			}
 			return
 		}
 		ctx := context.Background()
