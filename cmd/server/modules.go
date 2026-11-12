@@ -1,10 +1,13 @@
 package main
 
-import "github.com/nam3886/kratos-modular/internal/server"
+import (
+	"github.com/nam3886/kratos-modular/internal/module/settings"
+	"github.com/nam3886/kratos-modular/internal/server"
+)
 
 // registrars lists the modules that serve an API.
-func registrars() []server.Registrar {
-	return nil
+func registrars(s *settings.Module) []server.Registrar {
+	return []server.Registrar{s}
 }
 
 // consumers lists the modules that handle events.

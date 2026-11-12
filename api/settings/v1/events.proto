@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package settings.v1;
+
+option go_package = "github.com/nam3886/kratos-modular/api/settings/v1;v1";
+
+// SettingChanged is published after a setting is created or updated.
+message SettingChanged {
+  string currency = 1;
+  int64 max_amount = 2;
+}
