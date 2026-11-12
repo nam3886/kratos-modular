@@ -22,7 +22,7 @@ func NewLimitReader(settings settingsv1.SettingsServiceServer) biz.LimitReader {
 func (r *limitReader) MaxAmount(ctx context.Context, currency string) (int64, error) {
 	s, err := r.settings.GetSetting(ctx, &settingsv1.GetSettingRequest{Currency: currency})
 	if errors.IsNotFound(err) {
-		return 0, biz.ErrCurrencyNotSupported
+		return 0, biz.ErrPaymentCurrencyNotSupported
 	}
 	if err != nil {
 		return 0, err

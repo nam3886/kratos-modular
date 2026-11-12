@@ -925,12 +925,12 @@ func toBiz(row *ent.Setting) *biz.Setting {
 
 ```go
 var (
-	ErrPaymentNotFound        = errors.NotFound(v1.ErrorReason_PAYMENT_NOT_FOUND.String(), "payment not found")
-	ErrPaymentAmountInvalid   = errors.BadRequest(v1.ErrorReason_PAYMENT_AMOUNT_INVALID.String(), "amount must be positive")
-	ErrPaymentCurrencyInvalid = errors.BadRequest(v1.ErrorReason_PAYMENT_CURRENCY_INVALID.String(), "currency must be a 3-letter code")
-	ErrPaymentIDInvalid       = errors.BadRequest(v1.ErrorReason_PAYMENT_ID_INVALID.String(), "payment id must be a UUID")
-	ErrCurrencyNotSupported   = errors.BadRequest(v1.ErrorReason_PAYMENT_CURRENCY_NOT_SUPPORTED.String(), "currency is not supported")
-	ErrLimitExceeded          = errors.BadRequest(v1.ErrorReason_PAYMENT_LIMIT_EXCEEDED.String(), "amount exceeds the currency limit")
+	ErrPaymentNotFound               = errors.NotFound(v1.ErrorReason_PAYMENT_NOT_FOUND.String(), "payment not found")
+	ErrPaymentAmountInvalid          = errors.BadRequest(v1.ErrorReason_PAYMENT_AMOUNT_INVALID.String(), "amount must be positive")
+	ErrPaymentCurrencyInvalid        = errors.BadRequest(v1.ErrorReason_PAYMENT_CURRENCY_INVALID.String(), "currency must be a 3-letter code")
+	ErrPaymentIDInvalid              = errors.BadRequest(v1.ErrorReason_PAYMENT_ID_INVALID.String(), "payment id must be a UUID")
+	ErrPaymentCurrencyNotSupported   = errors.BadRequest(v1.ErrorReason_PAYMENT_CURRENCY_NOT_SUPPORTED.String(), "currency is not supported")
+	ErrPaymentLimitExceeded          = errors.BadRequest(v1.ErrorReason_PAYMENT_LIMIT_EXCEEDED.String(), "amount exceeds the currency limit")
 )
 
 type Payment struct {
@@ -966,13 +966,13 @@ Luật của `Create`, theo thứ tự:
 
 1. Viết hoa mã tiền. `amount <= 0` → `ErrPaymentAmountInvalid`; độ dài mã khác 3 → `ErrPaymentCurrencyInvalid`.
 2. `limits.MaxAmount(ctx, currency)`; lỗi thì trả nguyên lỗi đó.
-3. `amount > limit` → `ErrLimitExceeded` (bằng đúng hạn mức vẫn hợp lệ).
+3. `amount > limit` → `ErrPaymentLimitExceeded` (bằng đúng hạn mức vẫn hợp lệ).
 4. `repo.Create` với `ID: uuid.NewV7()`.
 
 **`data`**
 
 - `payment.go` — `Create` trong một `inTx`: `tx.Payment.Create().SetID(guuid.UUID(p.ID))...Save(ctx)` rồi `mq.Publish(ctx, tx, uuid.NewV7().String(), &v1.PaymentCreated{Id: p.ID.String(), Amount: p.Amount, Currency: p.Currency})`. Chuyển giữa hai kiểu UUID bằng ép kiểu trực tiếp `guuid.UUID(id)` và `uuid.UUID(row.ID)`. `Find`: không thấy thì trả `biz.ErrPaymentNotFound`.
-- `settings_client.go` — `NewLimitReader(settings settingsv1.SettingsServiceServer) biz.LimitReader`. `MaxAmount` gọi `settings.GetSetting(ctx, &settingsv1.GetSettingRequest{Currency: currency})`; `errors.IsNotFound(err)` → `biz.ErrCurrencyNotSupported`; lỗi khác trả nguyên.
+- `settings_client.go` — `NewLimitReader(settings settingsv1.SettingsServiceServer) biz.LimitReader`. `MaxAmount` gọi `settings.GetSetting(ctx, &settingsv1.GetSettingRequest{Currency: currency})`; `errors.IsNotFound(err)` → `biz.ErrPaymentCurrencyNotSupported`; lỗi khác trả nguyên.
 - `limit_change.go` — hằng xuất `Consumer = "payment"` khai báo trong `data.go` cạnh `database` (là hậu tố queue AMQP và khóa inbox; đổi tên sẽ giao lại và xử lý lại message cũ):
 
 ```go
@@ -1242,7 +1242,7 @@ Dùng gì thì test bằng cái đó: test tầng `data` và test tích hợp ch
 
 `internal/module/payment/internal/biz/payment_test.go`
 
-- `TestCreate` dạng bảng, hạn mức USD = 1000: 500/`usd` hợp lệ; 1000 hợp lệ; 1001 → `ErrLimitExceeded`; `EUR` → `ErrCurrencyNotSupported`; số tiền 0 → `ErrPaymentAmountInvalid`; mã `US` → `ErrPaymentCurrencyInvalid`. Trường hợp lỗi không được lưu gì; trường hợp hợp lệ có mã tiền viết hoa và ID khác `uuid.Nil()`.
+- `TestCreate` dạng bảng, hạn mức USD = 1000: 500/`usd` hợp lệ; 1000 hợp lệ; 1001 → `ErrPaymentLimitExceeded`; `EUR` → `ErrPaymentCurrencyNotSupported`; số tiền 0 → `ErrPaymentAmountInvalid`; mã `US` → `ErrPaymentCurrencyInvalid`. Trường hợp lỗi không được lưu gì; trường hợp hợp lệ có mã tiền viết hoa và ID khác `uuid.Nil()`.
 
 `internal/module/payment/internal/service/payment_test.go`
 

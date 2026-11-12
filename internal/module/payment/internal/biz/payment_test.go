@@ -22,7 +22,7 @@ type fakeLimits map[string]int64
 func (l fakeLimits) MaxAmount(_ context.Context, currency string) (int64, error) {
 	limit, ok := l[currency]
 	if !ok {
-		return 0, ErrCurrencyNotSupported
+		return 0, ErrPaymentCurrencyNotSupported
 	}
 	return limit, nil
 }
@@ -36,8 +36,8 @@ func TestCreate(t *testing.T) {
 	}{
 		{"within limit", 500, "usd", nil},
 		{"at limit", 1000, "USD", nil},
-		{"over limit", 1001, "USD", ErrLimitExceeded},
-		{"currency without setting", 5, "EUR", ErrCurrencyNotSupported},
+		{"over limit", 1001, "USD", ErrPaymentLimitExceeded},
+		{"currency without setting", 5, "EUR", ErrPaymentCurrencyNotSupported},
 		{"zero amount", 0, "USD", ErrPaymentAmountInvalid},
 		{"bad currency", 5, "US", ErrPaymentCurrencyInvalid},
 	}

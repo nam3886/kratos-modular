@@ -46,9 +46,10 @@ client ──► DTO ──► service ──► DO ──► biz ──► DO �
 ```
 
 - **service (proto ↔ biz).** Implements the generated server interface and
-  handles incoming events. Parses/validates requests, converts proto to
-  biz entities, builds the reply inline. Returns biz errors. No business
-  rules, no Ent.
+  handles incoming events. Converts proto to biz entities and back (the reply
+  is built at the return site, or by a `reply()` helper when more than one
+  handler shares it). Validation lives in `biz`, which returns the specific
+  reason. Returns biz errors. No business rules, no Ent.
 - **biz (DO only).** Owns entities, usecases, typed errors, and the repo
   interfaces it needs (including ones for other modules, such as `LimitReader`).
   Imports only its own `api/<m>/v1` (for error reasons). Never Ent, Watermill,
@@ -56,8 +57,11 @@ client ──► DTO ──► service ──► DO ──► biz ──► DO �
 - **data (Ent ↔ biz).** Implements biz repo interfaces; constructors return the
   biz interface, never the concrete type. Ent types never leave `data`
   (`toBiz` / `new<Resource>` conversions). Publishes events and opens
-  transactions here. Maps driver errors to biz typed errors.
+  transactions here. Maps not-found to biz typed errors; any other error is
+  returned as is and becomes `INTERNAL` at the server.
 - **server.** Transport only: construct servers, middleware, register modules.
+  A middleware logs every non-Kratos error and replies with `INTERNAL`, so
+  driver text never reaches clients.
 - **cmd.** The only place that wires modules together (`modules.go`, `wire.go`).
 
 ## Adding a module
@@ -90,7 +94,8 @@ architecture tests.
 | `biz` | plain Go, hand-written fakes of repo interfaces |
 | `service` | call service methods with real usecase + fake repo |
 | `data` | real repository on `testkit.Postgres(t)` (Docker) |
-| `server` | unit tests for codec and `bodyLimit` |
+| `server` | unit tests for codec, `bodyLimit` and the internal-error middleware |
+| `platform/mq` | real PostgreSQL and RabbitMQ (Docker) |
 | `cmd/server` (tag `integration`) | whole app via `wireApp` on real PostgreSQL + RabbitMQ |
 
 ## Workflow
@@ -118,7 +123,8 @@ reproducible under `go mod tidy`; do not remove it.
 - Resource `<Resource>` (e.g. `Payment`); collection RPC `List<Resources>`.
 - Types: repo `<Resource>Repo`, usecase `<Resource>Usecase`, service
   `<Resource>Service`. Conversions: convert inline at the boundary; extract
-  `convert<Resource>` / `new<Resource>` / `toBiz` only when reused.
+  `convert<Resource>` / `new<Resource>` / `toBiz` / a `reply()` helper only when
+  more than one handler or repo method shares it.
 - Error reasons: `ErrorReason` enum in `api/<m>/v1/<m>.proto`, surfaced as
   `Err<Resource><Cause>` in `biz`.
 
