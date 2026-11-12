@@ -24,3 +24,12 @@ func TestHideInternal(t *testing.T) {
 		t.Errorf("kratos error: got %v, want it unchanged", got)
 	}
 }
+
+func TestHideInternalClientClosed(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, got := hideInternal(func(ctx context.Context, _ any) (any, error) { return nil, ctx.Err() })(ctx, nil)
+	if kerrors.Code(got) != 499 || kerrors.Reason(got) != "CLIENT_CLOSED" {
+		t.Errorf("cancelled request: %v", got)
+	}
+}

@@ -21,6 +21,9 @@ func hideInternal(next middleware.Handler) middleware.Handler {
 		if errors.As(err, &ke) {
 			return reply, err
 		}
+		if errors.Is(ctx.Err(), context.Canceled) {
+			return nil, errors.ClientClosed("CLIENT_CLOSED", "client closed the request")
+		}
 		var op string
 		if tr, ok := transport.FromServerContext(ctx); ok {
 			op = tr.Operation()

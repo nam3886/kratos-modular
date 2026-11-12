@@ -40,7 +40,7 @@ func wireApp(confServer *conf.Server, data *conf.Data, logger *slog.Logger) (*kr
 		return nil, nil, err
 	}
 	v := registrars(module, paymentModule)
-	grpcServer := server.NewGRPCServer(confServer, metrics, v)
+	grpcServer := server.NewGRPCServer(confServer, logger, metrics, v)
 	httpServer := server.NewHTTPServer(confServer, logger, metrics, manager, v)
 	mqMQ, cleanup2, err := mq.New(data, manager, logger)
 	if err != nil {

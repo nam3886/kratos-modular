@@ -28,6 +28,7 @@ func NewHTTPServer(c *conf.Server, logger *slog.Logger, m *Metrics, dbs *db.Mana
 		})),
 		http.Middleware(
 			recovery.Recovery(),
+			requestLog(logger),
 			m.middleware,
 			hideInternal,
 		),

@@ -47,7 +47,7 @@ func newApp(logger *slog.Logger, gs *grpc.Server, hs *http.Server, ms *server.Me
 func main() {
 	flag.Parse()
 	logger := log.NewLogger(
-		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			AddSource: true,
 		}),
 		log.WithExtractor(tracing.TraceAttrs),
