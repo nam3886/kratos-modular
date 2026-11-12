@@ -1,6 +1,8 @@
 package server
 
 import (
+	stdhttp "net/http"
+
 	"github.com/nam3886/kratos-modular/internal/conf"
 
 	"github.com/go-kratos/kratos/v3/middleware/recovery"
@@ -19,6 +21,12 @@ func NewHTTPServer(c *conf.Server, m *Metrics, modules []Registrar) *http.Server
 	}
 	var opts = []http.ServerOption{
 		http.Filter(filters...),
+		// Without these the router falls back to http.DefaultServeMux, which
+		// the Prometheus import fills with /debug/vars.
+		http.NotFoundHandler(stdhttp.NotFoundHandler()),
+		http.MethodNotAllowedHandler(stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, _ *stdhttp.Request) {
+			stdhttp.Error(w, stdhttp.StatusText(stdhttp.StatusMethodNotAllowed), stdhttp.StatusMethodNotAllowed)
+		})),
 		http.Middleware(
 			recovery.Recovery(),
 			m.middleware,

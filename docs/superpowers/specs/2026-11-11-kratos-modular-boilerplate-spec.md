@@ -1406,6 +1406,7 @@ Mỗi mục dưới đây là một lỗi đã gặp thật khi dựng bản tha
 | 20 | Hai module đặt trùng tên bảng trong cùng database | Không có công cụ chặn; đặt tên bảng khác nhau |
 | 21 | `golangci-lint` build bằng Go cũ hơn 1.27 từ chối phân tích | Dùng bản v2.15.0 trở lên |
 | 22 | Lỗi errcheck và errorlint phổ biến | `defer func() { _ = c.Close() }()`; ghép lỗi bằng `errors.Join`, không `%v` |
+| 23 | Router HTTP của Kratos rơi về `http.DefaultServeMux` khi không khớp route, nơi thư viện Prometheus đăng ký `/debug/vars` (expvar) | Đặt `NotFoundHandler` và `MethodNotAllowedHandler` riêng ở `NewHTTPServer`; `GET /debug/vars` phải trả 404 |
 
 **Điều bản tham chiếu chưa kiểm chứng** (người triển khai phải tự chạy):
 
