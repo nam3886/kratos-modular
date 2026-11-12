@@ -1152,6 +1152,8 @@ func run(ctx context.Context, devURL, path, name string, tables []*schema.Table)
 		schema.WithDir(dir),
 		schema.WithMigrationMode(schema.ModeReplay),
 		schema.WithDialect(dialect.Postgres),
+		schema.WithDropColumn(true),
+		schema.WithDropIndex(true),
 		schema.WithFormatter(sqltool.GooseFormatter),
 	)
 	if err != nil {
@@ -1160,6 +1162,8 @@ func run(ctx context.Context, devURL, path, name string, tables []*schema.Table)
 	return m.NamedDiff(ctx, name, tables...)
 }
 ```
+
+`WithDropColumn` và `WithDropIndex` làm cột và index bị bỏ khỏi schema Ent xuất hiện trong migration; không dùng `WithErrNoPlan`. Xóa cả một entity vẫn cần `DROP TABLE` viết tay. Index viết tay trên bảng của Ent phải được khai báo trong schema Ent, nếu không lần `make migration` sau sẽ xóa nó.
 
 Import: `ariga.io/atlas/sql/migrate`, `ariga.io/atlas/sql/sqltool`, `entgo.io/ent/dialect`, `entgo.io/ent/dialect/sql/schema`, và import trống `github.com/lib/pq`.
 

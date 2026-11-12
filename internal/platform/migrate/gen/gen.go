@@ -54,6 +54,8 @@ func run(ctx context.Context, devURL, path, name string, tables []*schema.Table)
 		schema.WithDir(dir),
 		schema.WithMigrationMode(schema.ModeReplay),
 		schema.WithDialect(dialect.Postgres),
+		schema.WithDropColumn(true),
+		schema.WithDropIndex(true),
 		schema.WithFormatter(sqltool.GooseFormatter),
 	)
 	if err != nil {

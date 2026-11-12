@@ -104,6 +104,11 @@ make migrate
 its database, replayed on the empty `app_dev` database. Hand-written migration
 files are fine: put them in the same directory using the goose format.
 
+`make migration` also writes dropped columns and indexes. Removing a whole
+entity does not drop its table: write that `DROP TABLE` by hand. Declare every
+index of an Ent table in its Ent schema; a hand-written index that is missing
+there is dropped by the next `make migration`.
+
 The outbox and inbox tables are created by `make migrate` as well.
 
 ## Tests
