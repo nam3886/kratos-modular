@@ -17,9 +17,9 @@ import (
 	"github.com/go-kratos/kratos/v3/transport/http"
 )
 
-// go build -ldflags "-X main.Version=x.y.z"
+// go build -ldflags "-X main.Version=x.y.z -X main.Name=my-service"
 var (
-	Name     string
+	Name     = "kratos-modular"
 	Version  string
 	flagconf string
 

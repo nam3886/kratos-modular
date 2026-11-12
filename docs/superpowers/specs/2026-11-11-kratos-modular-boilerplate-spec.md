@@ -1025,11 +1025,12 @@ Event `PaymentCreated` được phát nhưng không module nào trong repo nhậ
 
 ## 11. Khởi động và wiring
 
-**`cmd/server/main.go`** — lấy từ kratos-layout với ba thay đổi:
+**`cmd/server/main.go`** — lấy từ kratos-layout với bốn thay đổi:
 
 - Bỏ `env.NewSource("KRATOS")`, chỉ còn `file.NewSource(flagconf)`.
 - Bỏ import `go.uber.org/automaxprocs` (Go 1.25 trở lên tự xử lý).
 - `newApp` nhận thêm `*server.Messaging` và đưa vào `kratos.Server(gs, hs, ms)`.
+- `Name` mặc định `"kratos-modular"` (vẫn ghi đè được bằng `-ldflags "-X main.Name=..."` như `Version`).
 
 ```go
 func newApp(logger *slog.Logger, gs *grpc.Server, hs *http.Server, ms *server.Messaging) *kratos.App
