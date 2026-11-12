@@ -13,8 +13,8 @@
 *_grpc.pb.go       linguist-generated=true
 *_http.pb.go       linguist-generated=true
 wire_gen.go        linguist-generated=true
-openapi.yaml       linguist-generated=true
-internal/data/ent/** linguist-generated=true
+api/openapi/openapi.yaml linguist-generated=true
+internal/module/*/internal/data/ent/** linguist-generated=true
 
 # Binaries.
 *.png binary

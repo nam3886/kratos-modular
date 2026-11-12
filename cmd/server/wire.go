@@ -8,11 +8,8 @@ package main
 import (
 	"log/slog"
 
-	"github.com/nam3886/kratos-modular/internal/biz"
 	"github.com/nam3886/kratos-modular/internal/conf"
-	"github.com/nam3886/kratos-modular/internal/data"
 	"github.com/nam3886/kratos-modular/internal/server"
-	"github.com/nam3886/kratos-modular/internal/service"
 
 	"github.com/go-kratos/kratos/v3"
 	"github.com/google/wire"
@@ -20,5 +17,5 @@ import (
 
 // wireApp init kratos application.
 func wireApp(*conf.Server, *conf.Data, *slog.Logger) (*kratos.App, func(), error) {
-	panic(wire.Build(server.ProviderSet, data.ProviderSet, biz.ProviderSet, service.ProviderSet, newApp))
+	panic(wire.Build(server.ProviderSet, newApp))
 }
