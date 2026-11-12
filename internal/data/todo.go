@@ -3,9 +3,9 @@ package data
 import (
 	"context"
 
-	"kratos-modular/internal/biz"
-	"kratos-modular/internal/data/ent"
-	"kratos-modular/internal/data/ent/todo"
+	"github.com/nam3886/kratos-modular/internal/biz"
+	"github.com/nam3886/kratos-modular/internal/data/ent"
+	"github.com/nam3886/kratos-modular/internal/data/ent/todo"
 
 	"github.com/go-kratos/aip-go/ents"
 	"github.com/google/uuid"

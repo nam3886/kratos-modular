@@ -9,13 +9,13 @@ import (
 	"log"
 	"reflect"
 
-	"kratos-modular/internal/data/ent/migrate"
 	"github.com/google/uuid"
+	"github.com/nam3886/kratos-modular/internal/data/ent/migrate"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
-	"kratos-modular/internal/data/ent/todo"
+	"github.com/nam3886/kratos-modular/internal/data/ent/todo"
 )
 
 // Client is the client that holds all ent builders.

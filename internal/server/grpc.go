@@ -1,9 +1,9 @@
 package server
 
 import (
-	v1 "kratos-modular/api/todo/v1"
-	"kratos-modular/internal/conf"
-	"kratos-modular/internal/service"
+	v1 "github.com/nam3886/kratos-modular/api/todo/v1"
+	"github.com/nam3886/kratos-modular/internal/conf"
+	"github.com/nam3886/kratos-modular/internal/service"
 
 	"github.com/go-kratos/kratos/v3/middleware/recovery"
 	"github.com/go-kratos/kratos/v3/transport/grpc"

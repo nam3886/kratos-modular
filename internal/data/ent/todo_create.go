@@ -10,9 +10,9 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"kratos-modular/internal/biz"
-	"kratos-modular/internal/data/ent/todo"
 	"github.com/google/uuid"
+	"github.com/nam3886/kratos-modular/internal/biz"
+	"github.com/nam3886/kratos-modular/internal/data/ent/todo"
 )
 
 // TodoCreate is the builder for creating a Todo entity.

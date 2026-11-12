@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"kratos-modular/internal/data/ent"
+	"github.com/nam3886/kratos-modular/internal/data/ent"
 )
 
 // The TodoFunc type is an adapter to allow the use of ordinary

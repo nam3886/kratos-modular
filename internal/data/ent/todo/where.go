@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"kratos-modular/internal/biz"
-	"kratos-modular/internal/data/ent/predicate"
 	"github.com/google/uuid"
+	"github.com/nam3886/kratos-modular/internal/biz"
+	"github.com/nam3886/kratos-modular/internal/data/ent/predicate"
 )
 
 // ID filters vertices based on their ID field.

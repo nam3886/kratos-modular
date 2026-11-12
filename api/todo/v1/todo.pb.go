@@ -340,18 +340,17 @@ type ListTodosRequest struct {
 	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Optional. The standard list filter.
 	// Supported fields:
-	//   - `title` (i.e. `title:"bug"`)
-	//   - `content` (i.e. `content:"docs"`)
-	//   - `completed` (i.e. `completed` or `NOT completed`)
-	//   - `created_at` range (i.e. `created_at>="2026-01-01T00:00:00Z"`)
+	//    * `title` (i.e. `title:"bug"`)
+	//    * `content` (i.e. `content:"docs"`)
+	//    * `completed` (i.e. `completed` or `NOT completed`)
+	//    * `created_at` range (i.e. `created_at>="2026-01-01T00:00:00Z"`)
 	Filter string `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
 	// Optional. A comma-separated list of fields to order by.
 	// Supported fields:
-	//   - `id`
-	//   - `title`
-	//   - `created_at`
-	//   - `updated_at`
-	//
+	//    * `id`
+	//    * `title`
+	//    * `created_at`
+	//    * `updated_at`
 	// Append ` desc` to a field for descending order, e.g. `created_at desc`.
 	// Defaults to ascending order when no direction is supplied.
 	OrderBy       string `protobuf:"bytes,4,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
@@ -803,8 +802,8 @@ const file_todo_v1_todo_proto_rawDesc = "" +
 	"UpdateTodo\x12\x1a.todo.v1.UpdateTodoRequest\x1a\r.todo.v1.Todo\"\x1e\x82\xd3\xe4\x93\x02\x18:\x04todo\x1a\x10/v1/todos/update\x12X\n" +
 	"\n" +
 	"DeleteTodo\x12\x1a.todo.v1.DeleteTodoRequest\x1a\x16.google.protobuf.Empty\"\x16\x82\xd3\xe4\x93\x02\x10*\x0e/v1/todos/{id}\x12X\n" +
-	"\tSyncTodos\x12\x18.todo.v1.SyncTodoRequest\x1a\x12.todo.v1.TodoEvent\"\x19\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/v1/todos/sync(\x010\x01BZ\n" +
-	"\x18io.grpc.examples.todo.v1B\tTodoProtoP\x01Z1kratos-modular/api/todo/v1;v1b\x06proto3"
+	"\tSyncTodos\x12\x18.todo.v1.SyncTodoRequest\x1a\x12.todo.v1.TodoEvent\"\x19\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/v1/todos/sync(\x010\x01BY\n" +
+	"\x18io.grpc.examples.todo.v1B\tTodoProtoP\x01Z0github.com/nam3886/kratos-modular/api/todo/v1;v1b\x06proto3"
 
 var (
 	file_todo_v1_todo_proto_rawDescOnce sync.Once

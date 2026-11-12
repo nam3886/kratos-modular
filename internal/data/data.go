@@ -3,8 +3,8 @@ package data
 import (
 	"context"
 
-	"kratos-modular/internal/conf"
-	"kratos-modular/internal/data/ent"
+	"github.com/nam3886/kratos-modular/internal/conf"
+	"github.com/nam3886/kratos-modular/internal/data/ent"
 
 	"github.com/go-kratos/kratos/v3/log"
 	_ "github.com/go-sql-driver/mysql"

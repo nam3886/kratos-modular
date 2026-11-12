@@ -6,8 +6,8 @@ import (
 	"io"
 	"strings"
 
-	v1 "kratos-modular/api/todo/v1"
-	"kratos-modular/internal/biz"
+	v1 "github.com/nam3886/kratos-modular/api/todo/v1"
+	"github.com/nam3886/kratos-modular/internal/biz"
 
 	"github.com/google/uuid"
 	"go.einride.tech/aip/fieldmask"

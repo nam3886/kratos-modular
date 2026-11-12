@@ -5,8 +5,8 @@ import (
 	stdsql "database/sql"
 	"testing"
 
-	"kratos-modular/internal/biz"
-	"kratos-modular/internal/data/ent"
+	"github.com/nam3886/kratos-modular/internal/biz"
+	"github.com/nam3886/kratos-modular/internal/data/ent"
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"

@@ -11,10 +11,10 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"kratos-modular/internal/biz"
-	"kratos-modular/internal/data/ent/predicate"
-	"kratos-modular/internal/data/ent/todo"
 	"github.com/google/uuid"
+	"github.com/nam3886/kratos-modular/internal/biz"
+	"github.com/nam3886/kratos-modular/internal/data/ent/predicate"
+	"github.com/nam3886/kratos-modular/internal/data/ent/todo"
 )
 
 const (

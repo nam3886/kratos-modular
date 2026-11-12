@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"kratos-modular/internal/data/ent/predicate"
-	"kratos-modular/internal/data/ent/todo"
+	"github.com/nam3886/kratos-modular/internal/data/ent/predicate"
+	"github.com/nam3886/kratos-modular/internal/data/ent/todo"
 )
 
 // TodoDelete is the builder for deleting a Todo entity.

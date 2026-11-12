@@ -78,8 +78,8 @@ const file_todo_v1_error_reason_proto_rawDesc = "" +
 	"\vErrorReason\x12\x14\n" +
 	"\x10TODO_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eTODO_NOT_FOUND\x10\x01\x12\x19\n" +
-	"\x15TODO_INVALID_ARGUMENT\x10\x02BJ\n" +
-	"\atodo.v1P\x01Z1kratos-modular/api/todo/v1;v1\xa2\x02\tAPITodoV1b\x06proto3"
+	"\x15TODO_INVALID_ARGUMENT\x10\x02BI\n" +
+	"\atodo.v1P\x01Z0github.com/nam3886/kratos-modular/api/todo/v1;v1\xa2\x02\tAPITodoV1b\x06proto3"
 
 var (
 	file_todo_v1_error_reason_proto_rawDescOnce sync.Once

@@ -12,7 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"kratos-modular/internal/data/ent/todo"
+	"github.com/nam3886/kratos-modular/internal/data/ent/todo"
 )
 
 // ent aliases to avoid import conflicts in user's code.

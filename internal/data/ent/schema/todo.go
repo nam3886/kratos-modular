@@ -5,7 +5,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 
-	"kratos-modular/internal/biz"
+	"github.com/nam3886/kratos-modular/internal/biz"
 )
 
 // Todo holds the schema definition for the Todo entity.

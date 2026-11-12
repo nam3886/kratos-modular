@@ -5,10 +5,10 @@ package ent
 import (
 	"time"
 
-	"kratos-modular/internal/biz"
-	"kratos-modular/internal/data/ent/schema"
-	"kratos-modular/internal/data/ent/todo"
 	"github.com/google/uuid"
+	"github.com/nam3886/kratos-modular/internal/biz"
+	"github.com/nam3886/kratos-modular/internal/data/ent/schema"
+	"github.com/nam3886/kratos-modular/internal/data/ent/todo"
 )
 
 // The init function reads all schema descriptors with runtime code

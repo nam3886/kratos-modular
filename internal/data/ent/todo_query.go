@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"kratos-modular/internal/data/ent/predicate"
-	"kratos-modular/internal/data/ent/todo"
 	"github.com/google/uuid"
+	"github.com/nam3886/kratos-modular/internal/data/ent/predicate"
+	"github.com/nam3886/kratos-modular/internal/data/ent/todo"
 )
 
 // TodoQuery is the builder for querying Todo entities.

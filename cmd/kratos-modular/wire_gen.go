@@ -7,12 +7,12 @@
 package main
 
 import (
-	"kratos-modular/internal/biz"
-	"kratos-modular/internal/conf"
-	"kratos-modular/internal/data"
-	"kratos-modular/internal/server"
-	"kratos-modular/internal/service"
 	"github.com/go-kratos/kratos/v3"
+	"github.com/nam3886/kratos-modular/internal/biz"
+	"github.com/nam3886/kratos-modular/internal/conf"
+	"github.com/nam3886/kratos-modular/internal/data"
+	"github.com/nam3886/kratos-modular/internal/server"
+	"github.com/nam3886/kratos-modular/internal/service"
 	"log/slog"
 )
 

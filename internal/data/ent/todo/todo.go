@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"kratos-modular/internal/biz"
 	"github.com/google/uuid"
+	"github.com/nam3886/kratos-modular/internal/biz"
 )
 
 const (
