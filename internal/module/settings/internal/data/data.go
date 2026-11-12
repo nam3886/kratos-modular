@@ -2,8 +2,6 @@ package data
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
@@ -36,22 +34,13 @@ func NewData(dbs *db.Manager) (*Data, error) {
 	return &Data{db: client}, nil
 }
 
-// inTx runs fn in one transaction: commit when fn returns nil, roll back otherwise.
 func (d *Data) inTx(ctx context.Context, fn func(tx *ent.Tx) error) error {
 	tx, err := d.db.Tx(ctx)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if v := recover(); v != nil {
-			_ = tx.Rollback()
-			panic(v)
-		}
-	}()
+	defer func() { _ = tx.Rollback() }()
 	if err := fn(tx); err != nil {
-		if rerr := tx.Rollback(); rerr != nil {
-			return errors.Join(err, fmt.Errorf("rollback: %w", rerr))
-		}
 		return err
 	}
 	return tx.Commit()

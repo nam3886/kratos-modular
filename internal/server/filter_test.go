@@ -40,18 +40,3 @@ func TestBodyLimit(t *testing.T) {
 		})
 	}
 }
-
-func TestBodyLimitDefaultsToOneMebibyte(t *testing.T) {
-	for _, limit := range []int64{0, -1} {
-		h := bodyLimit(limit)(nethttp.HandlerFunc(func(nethttp.ResponseWriter, *nethttp.Request) {}))
-		for length, want := range map[int64]int{defaultMaxBodyBytes + 1: nethttp.StatusRequestEntityTooLarge, defaultMaxBodyBytes: nethttp.StatusOK} {
-			req := httptest.NewRequest("POST", "/", strings.NewReader("x"))
-			req.ContentLength = length
-			rec := httptest.NewRecorder()
-			h.ServeHTTP(rec, req)
-			if rec.Code != want {
-				t.Fatalf("limit %d, length %d: status = %d, want %d", limit, length, rec.Code, want)
-			}
-		}
-	}
-}

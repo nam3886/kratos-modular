@@ -483,7 +483,7 @@ func (e executor) QueryContext(ctx context.Context, q string, args ...any) (wsql
 	return e.tx.QueryContext(ctx, q, args...)
 }
 
-func outboxSchema() wsql.PostgreSQLQueueSchema { return wsql.PostgreSQLQueueSchema{} }
+var outboxSchema = wsql.PostgreSQLQueueSchema{}
 
 // Publish lưu event vào outbox qua tx. Event chỉ tới RabbitMQ nếu tx commit.
 func Publish(ctx context.Context, tx Execer, id string, event proto.Message) error {
@@ -491,7 +491,7 @@ func Publish(ctx context.Context, tx Execer, id string, event proto.Message) err
 	if err != nil {
 		return err
 	}
-	sqlPub, err := wsql.NewPublisher(executor{tx}, wsql.PublisherConfig{SchemaAdapter: outboxSchema()}, watermill.NopLogger{})
+	sqlPub, err := wsql.NewPublisher(executor{tx}, wsql.PublisherConfig{SchemaAdapter: outboxSchema}, watermill.NopLogger{})
 	if err != nil {
 		return err
 	}
@@ -506,12 +506,12 @@ func Topic(event proto.Message) string {
 	return string(event.ProtoReflect().Descriptor().FullName())
 }
 
-// InitTables tạo bảng outbox (các câu lệnh của outboxSchema().SchemaInitializingQueries
+// InitTables tạo bảng outbox (các câu lệnh của outboxSchema.SchemaInitializingQueries
 // với Topic = outboxTopic) và bảng inbox trong một database. Chạy ngoài transaction, lặp lại an toàn.
 func InitTables(ctx context.Context, pool *sql.DB) error
 ```
 
-Hằng: `outboxTopic = "outbox"` (bảng sẽ tên `watermill_outbox`), `PoisonTopic = "poison"`. Bảng inbox:
+Hằng: `outboxTopic = "outbox"` (bảng sẽ tên `watermill_outbox`), `poisonTopic = "poison"`. Bảng inbox:
 
 ```sql
 CREATE TABLE IF NOT EXISTS inbox (
@@ -550,7 +550,7 @@ func (m *MQ) Stop(context.Context) error
 Hành vi bắt buộc:
 
 - **Cấu hình AMQP**: `amqp.NewDurablePubSubConfig(url, amqp.GenerateQueueNameTopicNameWithSuffix(consumer))` và đặt `cfg.Publish.ConfirmDelivery = true`. Kết quả: mỗi topic một exchange fanout bền, mỗi consumer một queue bền tên `<topic>_<consumer>`.
-- **`New`**: tạo một `amqp.Publisher`; tạo `message.Router` với middleware theo thứ tự `PoisonQueueWithFilter(pub, PoisonTopic, err => !errors.Is(err, context.Canceled))` (chỉ `Canceled`, không phải `DeadlineExceeded`; message bị ngắt do shutdown được broker giao lại thay vì vào poison), `Retry{MaxRetries: 3, InitialInterval: 100ms, MaxInterval: 1s, Multiplier: 2}`, `Recoverer`; với **mỗi** database tạo một forwarder: `wsql.NewSubscriber(wsql.BeginnerFromStdSQL(pool), SubscriberConfig{SchemaAdapter: outboxSchema(), OffsetsAdapter: wsql.PostgreSQLQueueOffsetsAdapter{DeleteOnAck: true}, PollInterval: 200ms})` rồi `forwarder.NewForwarder(sub, pub, logger, forwarder.Config{ForwarderTopic: outboxTopic})`. `New` không tạo bảng, nhưng khai báo queue bền `poison_poison` gắn với exchange `poison` (tạo `amqp.Subscriber` với `config(url, "poison")`, `SubscribeInitialize(PoisonTopic)`, rồi đóng). Logger là `watermill.NewSlogLogger(log)`. cleanup đóng publisher.
+- **`New`**: tạo một `amqp.Publisher`; tạo `message.Router` với middleware theo thứ tự `PoisonQueueWithFilter(pub, poisonTopic, err => !errors.Is(err, context.Canceled))` (chỉ `Canceled`, không phải `DeadlineExceeded`; message bị ngắt do shutdown được broker giao lại thay vì vào poison), `Retry{MaxRetries: 3, InitialInterval: 100ms, MaxInterval: 1s, Multiplier: 2}`, `Recoverer`; với **mỗi** database tạo một forwarder: `wsql.NewSubscriber(wsql.BeginnerFromStdSQL(pool), SubscriberConfig{SchemaAdapter: outboxSchema, OffsetsAdapter: wsql.PostgreSQLQueueOffsetsAdapter{DeleteOnAck: true}, PollInterval: 200ms})` rồi `forwarder.NewForwarder(sub, pub, logger, forwarder.Config{ForwarderTopic: outboxTopic})`. `New` không tạo bảng, nhưng khai báo queue bền `poison_poison` gắn với exchange `poison` (tạo `amqp.Subscriber` với `config(url, "poison")`, `SubscribeInitialize(poisonTopic)`, rồi đóng). Logger là `watermill.NewSlogLogger(log)`. cleanup đóng publisher.
 - **`Handle`**: tạo một `amqp.Subscriber` riêng, gọi ngay `sub.SubscribeInitialize(topic)` để khai báo queue trước khi ứng dụng nhận request, rồi `router.AddConsumerHandler(consumer+":"+topic, topic, sub, ...)`.
 - **`Start`**: chạy mọi `forwarder.Run(ctx)` và `router.Run(ctx)` trong goroutine, chặn cho tới khi tất cả kết thúc. Context dẫn xuất bằng `context.WithCancel(context.WithoutCancel(ctx))`. Lỗi khác `context.Canceled` thì hủy tất cả và trả về lỗi gộp.
 - **`Stop`**: hủy context, `Close` từng forwarder và router, chờ goroutine, rồi đóng các subscriber.
@@ -808,22 +808,14 @@ func NewData(dbs *db.Manager) (*Data, error) {
 	return &Data{db: client}, nil
 }
 
-// inTx chạy fn trong một transaction: commit khi fn trả nil, rollback khi lỗi hoặc panic.
+// inTx chạy fn trong một transaction: commit khi fn trả nil; mọi trường hợp khác (lỗi, panic) Rollback chạy qua defer.
 func (d *Data) inTx(ctx context.Context, fn func(tx *ent.Tx) error) error {
 	tx, err := d.db.Tx(ctx)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if v := recover(); v != nil {
-			_ = tx.Rollback()
-			panic(v)
-		}
-	}()
+	defer func() { _ = tx.Rollback() }()
 	if err := fn(tx); err != nil {
-		if rerr := tx.Rollback(); rerr != nil {
-			return errors.Join(err, fmt.Errorf("rollback: %w", rerr))
-		}
 		return err
 	}
 	return tx.Commit()
@@ -900,11 +892,7 @@ func (r *settingRepo) Save(ctx context.Context, s *biz.Setting) (*biz.Setting, e
 	if err != nil {
 		return nil, err
 	}
-	return &biz.Setting{Currency: s.Currency, MaxAmount: s.MaxAmount}, nil
-}
-
-func toBiz(row *ent.Setting) *biz.Setting {
-	return &biz.Setting{Currency: row.ID, MaxAmount: row.MaxAmount}
+	return s, nil
 }
 ```
 
@@ -1244,7 +1232,7 @@ Dùng gì thì test bằng cái đó: test tầng `data` và test tích hợp ch
 `internal/module/payment/internal/service/payment_test.go`
 
 - `TestCreateThenGet`: tạo rồi đọc lại, mã tiền `USD`, trạng thái `pending`.
-- `TestErrorsCarryTheAPIReason`: vượt hạn mức có `errors.Reason(err) == "PAYMENT_LIMIT_EXCEEDED"` và `errors.Code(err) == 400`; id không phải UUID có reason `PAYMENT_ID_INVALID`; id không tồn tại thỏa `errors.IsNotFound`.
+- `TestErrorsCarryTheAPIReason`: id không phải UUID có reason `PAYMENT_ID_INVALID`; id không tồn tại thỏa `errors.IsNotFound`.
 
 `internal/module/payment/internal/data/payment_test.go`
 
@@ -1259,7 +1247,6 @@ Dùng gì thì test bằng cái đó: test tầng `data` và test tích hợp ch
 `internal/server/filter_test.go`
 
 - `TestBodyLimit` với giới hạn 10 byte: body 10 byte → 200; 11 byte có khai báo độ dài → 413; 11 byte với `ContentLength = -1` → handler đọc lỗi (400).
-- `TestBodyLimitDefaultsToOneMebibyte`: `bodyLimit(0)` từ chối request khai báo `1<<20 + 1` byte.
 
 `cmd/server/integration_test.go` (`//go:build integration`, package `main`)
 
@@ -1271,16 +1258,16 @@ Dùng gì thì test bằng cái đó: test tầng `data` và test tích hợp ch
 
 ## 14. Công cụ
 
-**`Makefile`** — giữ target `help` của kratos-layout làm mặc định; mỗi target có một dòng chú thích `# ...` phía trên. Biến: `module ?=`, `name ?=`, `db ?= main`.
+**`Makefile`** — giữ target `help` của kratos-layout làm mặc định; mỗi target có một dòng chú thích `# ...` phía trên. Biến: `db ?= main`.
 
 | Target | Lệnh |
 | --- | --- |
-| `init` | `go install` cho `github.com/google/wire/cmd/wire@latest`, `github.com/bufbuild/buf/cmd/buf@latest`, `github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest` |
+| `init` | `go install` cho `github.com/bufbuild/buf/cmd/buf@latest`, `github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest` |
 | `api` | `buf generate --template buf.gen.yaml` |
 | `config` | `buf generate --template buf.gen.config.yaml` |
 | `ent` | `go generate ./internal/module/*/internal/data/ent` |
-| `wire` | `go run -mod=mod github.com/google/wire/cmd/wire ./internal/module/... ./cmd/...` |
-| `generate` | `api config ent wire`, rồi `go mod tidy` |
+| `wire` | `go run -mod=mod github.com/google/wire/cmd/wire ./internal/module/... ./cmd/...`, rồi `go mod tidy` |
+| `generate` | `api config ent wire` |
 | `build` | `mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/ ./cmd/...` |
 | `up` | `docker compose up -d --wait` |
 | `down` | `docker compose down` |
@@ -1371,7 +1358,7 @@ volumes:
 
 **`.gitignore`**: `bin/`, `*.exe`, `*.test`, `*.out`, `vendor/`, `go.work`, `go.work.sum`, `.idea/`, `.vscode/`, `.DS_Store`.
 
-**`README.md`** (tiếng Anh, ngắn) gồm các mục: giới thiệu một đoạn; Requirements; Quick start (`go mod tidy`, `make init`, `make up`, `make migrate`, `make run`, ba lệnh `curl` mẫu); Use it as a template (ba bước: `go mod edit -module <mới>`, một lệnh `git grep -l ... | xargs perl -pi -e` đổi import path trong `*.go`, `*.proto`, `.golangci.yml`, rồi `make generate`); Layout; How modules relate (năm quy tắc ở mục 4); Adding a module; Changing the schema; Tests; Configuration; Operations (chạy `migrate` trước server, queue `poison_poison` có sẵn để replay, queue consumer khai báo lúc khởi động, quy ước JSON).
+**`README.md`** (tiếng Anh, ngắn) gồm các mục: giới thiệu một đoạn; Requirements; Quick start (`go mod tidy`, `make init`, `make up`, `make migrate`, `make run`, ba lệnh `curl` mẫu); Use it as a template (ba bước: `go mod edit -module <mới>`, một lệnh `git grep -l ... | xargs perl -pi -e` đổi import path trong `*.go`, `*.proto`, `.golangci.yml`, rồi `make generate`); Layout; How modules relate (năm quy tắc ở mục 4); Development (một dòng trỏ tới AGENTS.md cho thêm module, đổi schema, test); Configuration; Operations (chạy `migrate` trước server, queue `poison_poison` có sẵn để replay, queue consumer khai báo lúc khởi động, quy ước JSON).
 
 ## 15. Bẫy đã biết
 

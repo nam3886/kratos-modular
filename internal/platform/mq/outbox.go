@@ -28,7 +28,7 @@ func (e executor) QueryContext(ctx context.Context, q string, args ...any) (wsql
 	return e.tx.QueryContext(ctx, q, args...)
 }
 
-func outboxSchema() wsql.PostgreSQLQueueSchema { return wsql.PostgreSQLQueueSchema{} }
+var outboxSchema = wsql.PostgreSQLQueueSchema{}
 
 // Publish stores event in the outbox through tx. The event reaches RabbitMQ
 // only if tx commits. The topic is the event's full proto name.
@@ -37,7 +37,7 @@ func Publish(ctx context.Context, tx Execer, id string, event proto.Message) err
 	if err != nil {
 		return err
 	}
-	sqlPub, err := wsql.NewPublisher(executor{tx}, wsql.PublisherConfig{SchemaAdapter: outboxSchema()}, watermill.NopLogger{})
+	sqlPub, err := wsql.NewPublisher(executor{tx}, wsql.PublisherConfig{SchemaAdapter: outboxSchema}, watermill.NopLogger{})
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func Topic(event proto.Message) string {
 }
 
 func InitTables(ctx context.Context, pool *sql.DB) error {
-	queries, err := outboxSchema().SchemaInitializingQueries(wsql.SchemaInitializingQueriesParams{Topic: outboxTopic})
+	queries, err := outboxSchema.SchemaInitializingQueries(wsql.SchemaInitializingQueriesParams{Topic: outboxTopic})
 	if err != nil {
 		return err
 	}

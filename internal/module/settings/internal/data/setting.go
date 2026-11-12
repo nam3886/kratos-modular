@@ -27,7 +27,7 @@ func (r *settingRepo) Find(ctx context.Context, currency string) (*biz.Setting, 
 	if err != nil {
 		return nil, err
 	}
-	return toBiz(row), nil
+	return &biz.Setting{Currency: row.ID, MaxAmount: row.MaxAmount}, nil
 }
 
 // Save stores the setting and its SettingChanged event in one transaction.
@@ -43,9 +43,5 @@ func (r *settingRepo) Save(ctx context.Context, s *biz.Setting) (*biz.Setting, e
 	if err != nil {
 		return nil, err
 	}
-	return &biz.Setting{Currency: s.Currency, MaxAmount: s.MaxAmount}, nil
-}
-
-func toBiz(row *ent.Setting) *biz.Setting {
-	return &biz.Setting{Currency: row.ID, MaxAmount: row.MaxAmount}
+	return s, nil
 }

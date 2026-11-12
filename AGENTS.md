@@ -84,6 +84,10 @@ client ──► DTO ──► service ──► DO ──► biz ──► DO �
 
 Never hand-edit `atlas.sum`; hand-written goose files may share the directory.
 
+Removing an entity does not drop its table: write the `DROP TABLE` by hand.
+Declare every index in the Ent schema; one that is missing there is dropped by
+the next `make migration`.
+
 ## Testing
 
 Tests sit beside the code (`*_test.go`). No SQLite, no mock generators, no
@@ -111,7 +115,7 @@ architecture tests.
 
 ## Generation & generated files
 
-Regenerate via `make generate` (= `api config ent wire`, then `go mod tidy`) or
+Regenerate via `make generate` (= `api config ent wire`) or
 the single steps `make api`, `make config`, `make ent`, `make wire`. Never
 hand-edit `*.pb.go`, `*_grpc.pb.go`, `*_http.pb.go`, `wire_gen.go`, Ent
 output, `api/openapi/openapi.yaml`, or `atlas.sum`. `go.mod` carries

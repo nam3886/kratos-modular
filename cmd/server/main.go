@@ -35,7 +35,6 @@ func newApp(logger *slog.Logger, gs *grpc.Server, hs *http.Server, ms *server.Me
 		kratos.ID(id),
 		kratos.Name(Name),
 		kratos.Version(Version),
-		kratos.Metadata(map[string]string{}),
 		kratos.Logger(logger),
 		kratos.Server(
 			gs,
@@ -50,7 +49,6 @@ func main() {
 	logger := log.NewLogger(
 		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 			AddSource: true,
-			Level:     slog.LevelInfo,
 		}),
 		log.WithExtractor(tracing.TraceAttrs),
 	).With(

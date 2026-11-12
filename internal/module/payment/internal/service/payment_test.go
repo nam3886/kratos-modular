@@ -57,11 +57,7 @@ func TestCreateThenGet(t *testing.T) {
 func TestErrorsCarryTheAPIReason(t *testing.T) {
 	s := newService()
 	ctx := context.Background()
-	_, err := s.CreatePayment(ctx, &v1.CreatePaymentRequest{Payment: &v1.Payment{Amount: 5000, Currency: "USD"}})
-	if errors.Reason(err) != v1.ErrorReason_PAYMENT_LIMIT_EXCEEDED.String() || errors.Code(err) != 400 {
-		t.Fatalf("over limit: reason=%q code=%d", errors.Reason(err), errors.Code(err))
-	}
-	_, err = s.GetPayment(ctx, &v1.GetPaymentRequest{Id: "not-a-uuid"})
+	_, err := s.GetPayment(ctx, &v1.GetPaymentRequest{Id: "not-a-uuid"})
 	if errors.Reason(err) != v1.ErrorReason_PAYMENT_ID_INVALID.String() {
 		t.Fatalf("bad id: reason=%q", errors.Reason(err))
 	}

@@ -1,14 +1,11 @@
 VERSION=$(shell git describe --tags --always 2>/dev/null || echo dev)
 
-# Arguments of `make migration`.
-module ?=
-name ?=
+# Database `make migration` writes to.
 db ?= main
 
 .PHONY: init
-# install the code generators
+# install buf and golangci-lint
 init:
-	go install github.com/google/wire/cmd/wire@v0.7.0
 	go install github.com/bufbuild/buf/cmd/buf@v1.51.0
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
 
@@ -36,7 +33,6 @@ wire:
 .PHONY: generate
 # generate everything
 generate: api config ent wire
-	go mod tidy
 
 .PHONY: build
 # build the binaries into ./bin

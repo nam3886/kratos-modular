@@ -25,8 +25,8 @@ import (
 
 const (
 	outboxTopic = "outbox"
-	// PoisonTopic receives messages a consumer failed to handle after all retries.
-	PoisonTopic = "poison"
+	// poisonTopic receives messages a consumer failed to handle after all retries.
+	poisonTopic = "poison"
 )
 
 // Handler handles one message. Returning an error triggers a retry.
@@ -62,15 +62,15 @@ func New(c *conf.Data, dbs *db.Manager, log *slog.Logger) (*MQ, func(), error) {
 	}
 	// A context cancelled by shutdown is not a poison message: leave it
 	// unacked so the broker redelivers it after restart.
-	poison, err := middleware.PoisonQueueWithFilter(pub, PoisonTopic, func(err error) bool { return !errors.Is(err, context.Canceled) })
+	poison, err := middleware.PoisonQueueWithFilter(pub, poisonTopic, func(err error) bool { return !errors.Is(err, context.Canceled) })
 	if err != nil {
 		return nil, nil, err
 	}
-	ps, err := amqp.NewSubscriber(config(url, PoisonTopic), logger)
+	ps, err := amqp.NewSubscriber(config(url, poisonTopic), logger)
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := ps.SubscribeInitialize(PoisonTopic); err != nil {
+	if err := ps.SubscribeInitialize(poisonTopic); err != nil {
 		return nil, nil, fmt.Errorf("declare poison queue: %w", err)
 	}
 	_ = ps.Close()
@@ -82,7 +82,7 @@ func New(c *conf.Data, dbs *db.Manager, log *slog.Logger) (*MQ, func(), error) {
 	m := &MQ{url: url, logger: logger, publisher: pub, router: router}
 	for _, d := range dbs.All() {
 		sub, err := wsql.NewSubscriber(wsql.BeginnerFromStdSQL(d.Pool), wsql.SubscriberConfig{
-			SchemaAdapter:  outboxSchema(),
+			SchemaAdapter:  outboxSchema,
 			OffsetsAdapter: wsql.PostgreSQLQueueOffsetsAdapter{DeleteOnAck: true},
 			PollInterval:   200 * time.Millisecond,
 		}, logger)

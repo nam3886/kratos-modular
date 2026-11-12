@@ -4,7 +4,6 @@ package main
 
 import (
 	"encoding/json"
-	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -38,7 +37,7 @@ func TestPaymentFlow(t *testing.T) {
 			Rabbitmq:  &conf.Data_RabbitMQ{Url: testkit.RabbitMQURL(t)},
 		},
 	}
-	app, cleanup, err := wireApp(bc.Server, bc.Data, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	app, cleanup, err := wireApp(bc.Server, bc.Data, slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,16 +56,14 @@ func TestPaymentFlow(t *testing.T) {
 	const base = "http://127.0.0.1:18000"
 	call := func(method, path, body string) (int, map[string]any) {
 		t.Helper()
-		req, _ := http.NewRequest(method, base+path, strings.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
 		var res *http.Response
 		for range 50 {
+			req, _ := http.NewRequest(method, base+path, strings.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
 			if res, err = http.DefaultClient.Do(req); err == nil {
 				break
 			}
 			time.Sleep(100 * time.Millisecond)
-			req, _ = http.NewRequest(method, base+path, strings.NewReader(body))
-			req.Header.Set("Content-Type", "application/json")
 		}
 		if err != nil {
 			t.Fatalf("%s %s: %v", method, path, err)

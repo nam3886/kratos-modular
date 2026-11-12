@@ -21,7 +21,7 @@ Go 1.27, Docker (local services and tests), and the tools installed by `make ini
 
 ```sh
 go mod tidy       # first time only: resolves and records dependency versions
-make init         # install wire, buf, golangci-lint
+make init         # install buf, golangci-lint
 make up           # PostgreSQL and RabbitMQ
 make migrate      # create the tables
 make run          # HTTP on :8000, gRPC on :9000
@@ -87,46 +87,11 @@ internal/module/<module>/
 - **Databases.** A module picks its database with the `database` constant in its
   `data.go`. Modules on the same database share one connection pool.
 
-## Adding a module
+## Development
 
-1. Write `api/<name>/v1/*.proto`, then `make api`.
-2. Copy `internal/module/settings` (or `payment` if it consumes events) to
-   `internal/module/<name>` and replace its contents; a module with consumers
-   must also rename `data.Consumer` in its `data.go`.
-3. Add the module to `cmd/server/wire.go` and `cmd/server/modules.go`, then
-   `make ent wire`.
-4. `make migration module=<name> name=<name>_init`, then `make migrate`.
-
-## Changing the schema
-
-Edit the ent schema, then:
-
-```sh
-make ent
-make migration module=payment name=add_note   # writes migrations/main/<timestamp>_add_note.sql
-make migrate
-```
-
-`make migration` compares the module's schema with the migration directory of
-its database, replayed on the empty `app_dev` database. Hand-written migration
-files are fine: put them in the same directory using the goose format.
-
-`make migration` also writes dropped columns and indexes. Removing a whole
-entity does not drop its table: write that `DROP TABLE` by hand. Declare every
-index of an Ent table in its Ent schema; a hand-written index that is missing
-there is dropped by the next `make migration`.
-
-The outbox and inbox tables are created by `make migrate` as well.
-
-## Tests
-
-| Layer | How |
-|---|---|
-| `biz`, `service` | plain Go with hand-written fakes |
-| `data` | real PostgreSQL, migrated with the real migrations |
-| `cmd/server` (tag `integration`) | the whole application with real PostgreSQL and RabbitMQ |
-
-`make test` and `make test-integration` start the services with testcontainers.
+Adding a module, changing the schema and testing are described in
+[AGENTS.md](AGENTS.md). `make test` and `make test-integration` start
+PostgreSQL and RabbitMQ with testcontainers (Docker).
 
 ## Configuration
 

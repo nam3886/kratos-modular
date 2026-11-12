@@ -9,8 +9,6 @@ import (
 	"github.com/go-kratos/kratos/v3/transport/http"
 )
 
-// NewHTTPServer new an HTTP server, mounts every module on it and serves
-// the metrics at /metrics.
 func NewHTTPServer(c *conf.Server, m *Metrics, modules []Registrar) *http.Server {
 	var filters []http.FilterFunc
 	// CORS goes first so that 413 responses from bodyLimit carry its headers.

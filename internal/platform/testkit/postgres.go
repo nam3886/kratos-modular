@@ -4,7 +4,6 @@ package testkit
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"sync"
 	"testing"
@@ -63,7 +62,7 @@ func Postgres(t testing.TB) *db.Manager {
 	if _, err := main.Pool.ExecContext(ctx, "DROP SCHEMA public CASCADE; CREATE SCHEMA public"); err != nil {
 		t.Fatalf("reset test database: %v", err)
 	}
-	if err := migrate.Up(ctx, dbs, slog.New(slog.NewTextHandler(io.Discard, nil))); err != nil {
+	if err := migrate.Up(ctx, dbs, slog.New(slog.DiscardHandler)); err != nil {
 		t.Fatalf("migrate test database: %v", err)
 	}
 	return dbs
