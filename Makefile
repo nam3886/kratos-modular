@@ -8,9 +8,9 @@ db ?= main
 .PHONY: init
 # install the code generators
 init:
-	go install github.com/google/wire/cmd/wire@latest
-	go install github.com/bufbuild/buf/cmd/buf@latest
-	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+	go install github.com/google/wire/cmd/wire@v0.7.0
+	go install github.com/bufbuild/buf/cmd/buf@v1.51.0
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
 
 .PHONY: api
 # generate Go code and the OpenAPI document from api/
