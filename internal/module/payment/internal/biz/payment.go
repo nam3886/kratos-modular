@@ -8,6 +8,8 @@ import (
 	v1 "github.com/nam3886/kratos-modular/api/payment/v1"
 
 	"github.com/go-kratos/kratos/v3/errors"
+	"go.einride.tech/aip/filtering"
+	"go.einride.tech/aip/ordering"
 )
 
 var (
@@ -16,6 +18,8 @@ var (
 	ErrPaymentCurrencyInvalid      = errors.BadRequest(v1.ErrorReason_PAYMENT_CURRENCY_INVALID.String(), "currency must be a 3-letter code")
 	ErrPaymentIDInvalid            = errors.BadRequest(v1.ErrorReason_PAYMENT_ID_INVALID.String(), "payment id must be a UUID")
 	ErrPaymentCurrencyNotSupported = errors.BadRequest(v1.ErrorReason_PAYMENT_CURRENCY_NOT_SUPPORTED.String(), "currency is not supported")
+	ErrPaymentFilterInvalid        = errors.BadRequest(v1.ErrorReason_PAYMENT_LIST_INVALID.String(), "filter is not valid; fields: amount, currency, status")
+	ErrPaymentOrderByInvalid       = errors.BadRequest(v1.ErrorReason_PAYMENT_LIST_INVALID.String(), "order_by is not valid; fields: amount, currency, status")
 	ErrPaymentLimitExceeded        = errors.BadRequest(v1.ErrorReason_PAYMENT_LIMIT_EXCEEDED.String(), "amount exceeds the currency limit")
 )
 
@@ -30,6 +34,15 @@ type Payment struct {
 type PaymentRepo interface {
 	Create(ctx context.Context, p *Payment) (*Payment, error)
 	Find(ctx context.Context, id uuid.UUID) (*Payment, error)
+	// List returns one page and the number of payments matching the filter.
+	List(ctx context.Context, q ListQuery) ([]*Payment, int, error)
+}
+
+type ListQuery struct {
+	Filter  filtering.Filter
+	OrderBy ordering.OrderBy
+	Offset  int
+	Limit   int
 }
 
 // LimitReader is what this module needs from the settings module.
@@ -72,6 +85,10 @@ func (uc *PaymentUsecase) Create(ctx context.Context, amount int64, currency str
 
 func (uc *PaymentUsecase) Get(ctx context.Context, id uuid.UUID) (*Payment, error) {
 	return uc.repo.Find(ctx, id)
+}
+
+func (uc *PaymentUsecase) List(ctx context.Context, q ListQuery) ([]*Payment, int, error) {
+	return uc.repo.List(ctx, q)
 }
 
 func (uc *PaymentUsecase) LimitChanged(ctx context.Context, messageID, currency string, maxAmount int64) error {

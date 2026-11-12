@@ -17,6 +17,9 @@ service PaymentService {
   rpc GetPayment (GetPaymentRequest) returns (Payment) {
     option (google.api.http) = {get: "/v1/payments/{id}"};
   }
+  rpc ListPayments (ListPaymentsRequest) returns (ListPaymentsResponse) {
+    option (google.api.http) = {get: "/v1/payments"};
+  }
 }
 
 message Payment {
@@ -34,6 +37,23 @@ message GetPaymentRequest {
   string id = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
+message ListPaymentsRequest {
+  // Page number, starting at 1. Default 1.
+  int32 page = 1;
+  // Items per page. Default 20, at most 100.
+  int32 page_size = 2;
+  // AIP-160 filter on amount, currency, status, e.g. `currency="USD" AND amount>100`.
+  string filter = 3;
+  // AIP-132 order on amount, currency, status, e.g. `amount desc`. Default: newest first.
+  string order_by = 4;
+}
+
+message ListPaymentsResponse {
+  repeated Payment payments = 1;
+  // Number of payments matching the filter, across all pages.
+  int32 total_size = 2;
+}
+
 enum ErrorReason {
   ERROR_REASON_UNSPECIFIED = 0;
   PAYMENT_NOT_FOUND = 1;
@@ -42,4 +62,5 @@ enum ErrorReason {
   PAYMENT_CURRENCY_INVALID = 4;
   PAYMENT_ID_INVALID = 5;
   PAYMENT_CURRENCY_NOT_SUPPORTED = 6;
+  PAYMENT_LIST_INVALID = 7;
 }

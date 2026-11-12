@@ -7,8 +7,11 @@ import (
 	v1 "github.com/nam3886/kratos-modular/api/payment/v1"
 	"github.com/nam3886/kratos-modular/internal/module/payment/internal/biz"
 	"github.com/nam3886/kratos-modular/internal/module/payment/internal/data/ent"
+	"github.com/nam3886/kratos-modular/internal/module/payment/internal/data/ent/payment"
 	"github.com/nam3886/kratos-modular/internal/platform/mq"
 
+	"entgo.io/ent/dialect/sql"
+	"github.com/go-kratos/aip-go/ents"
 	guuid "github.com/google/uuid"
 )
 
@@ -46,6 +49,32 @@ func (r *paymentRepo) Find(ctx context.Context, id uuid.UUID) (*biz.Payment, err
 		return nil, err
 	}
 	return toBiz(row), nil
+}
+
+// List orders by id last: offset pagination needs a total order, and
+// UUIDv7 ids put the newest first when nothing else is asked for.
+func (r *paymentRepo) List(ctx context.Context, q biz.ListQuery) ([]*biz.Payment, int, error) {
+	if ents.VisitComparisons(q.Filter, func(ents.Comparison) error { return nil }) != nil {
+		return nil, 0, biz.ErrPaymentFilterInvalid
+	}
+	query := r.data.db.Payment.Query().Where(ents.ApplyFilter(q.Filter))
+	total, err := query.Clone().Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	rows, err := query.
+		Order(ents.ApplyOrderBy(q.OrderBy), payment.ByID(sql.OrderDesc())).
+		Offset(q.Offset).
+		Limit(q.Limit).
+		All(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	out := make([]*biz.Payment, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, toBiz(row))
+	}
+	return out, total, nil
 }
 
 func toBiz(row *ent.Payment) *biz.Payment {

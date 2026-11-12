@@ -8,6 +8,9 @@ import (
 
 	"github.com/nam3886/kratos-modular/internal/module/payment/internal/biz"
 	"github.com/nam3886/kratos-modular/internal/platform/testkit"
+
+	"go.einride.tech/aip/filtering"
+	"go.einride.tech/aip/ordering"
 )
 
 func TestCreateStoresPaymentAndEventTogether(t *testing.T) {
@@ -68,3 +71,54 @@ func TestRecordIsIdempotentPerMessage(t *testing.T) {
 		t.Fatalf("limit_changes = %d, want 2", n)
 	}
 }
+
+func TestListFiltersOrdersAndPages(t *testing.T) {
+	d, err := NewData(testkit.Postgres(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	repo := NewPaymentRepo(d)
+	ctx := context.Background()
+	for _, p := range []*biz.Payment{{Amount: 10, Currency: "USD"}, {Amount: 20, Currency: "USD"}, {Amount: 30, Currency: "USD"}, {Amount: 5, Currency: "EUR"}} {
+		p.ID = uuid.NewV7()
+		if _, err := repo.Create(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	decl, _ := filtering.NewDeclarations(filtering.DeclareStandardFunctions(), filtering.DeclareIdent("currency", filtering.TypeString))
+	filter, err := filtering.ParseFilter(listRequest{filter: `currency="USD"`}, decl)
+	if err != nil {
+		t.Fatal(err)
+	}
+	orderBy, err := ordering.ParseOrderBy(listRequest{orderBy: "amount desc"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, total, err := repo.List(ctx, biz.ListQuery{Filter: filter, OrderBy: orderBy, Offset: 2, Limit: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if total != 3 || len(got) != 1 || got[0].Amount != 10 {
+		t.Fatalf("total=%d page=%+v, want total 3 and the 10 USD payment", total, got)
+	}
+
+	// Without an order the newest payment comes first.
+	got, total, err = repo.List(ctx, biz.ListQuery{Limit: 1})
+	if err != nil || total != 4 || got[0].Currency != "EUR" {
+		t.Fatalf("default order: total=%d page=%+v err=%v", total, got, err)
+	}
+
+	bad, err := filtering.ParseFilter(listRequest{filter: `1=1`}, decl)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := repo.List(ctx, biz.ListQuery{Filter: bad, Limit: 1}); !errors.Is(err, biz.ErrPaymentFilterInvalid) {
+		t.Fatalf("1=1: err=%v, want ErrPaymentFilterInvalid", err)
+	}
+}
+
+type listRequest struct{ filter, orderBy string }
+
+func (r listRequest) GetFilter() string  { return r.filter }
+func (r listRequest) GetOrderBy() string { return r.orderBy }

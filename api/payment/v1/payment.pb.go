@@ -32,6 +32,7 @@ const (
 	ErrorReason_PAYMENT_CURRENCY_INVALID       ErrorReason = 4
 	ErrorReason_PAYMENT_ID_INVALID             ErrorReason = 5
 	ErrorReason_PAYMENT_CURRENCY_NOT_SUPPORTED ErrorReason = 6
+	ErrorReason_PAYMENT_LIST_INVALID           ErrorReason = 7
 )
 
 // Enum value maps for ErrorReason.
@@ -44,6 +45,7 @@ var (
 		4: "PAYMENT_CURRENCY_INVALID",
 		5: "PAYMENT_ID_INVALID",
 		6: "PAYMENT_CURRENCY_NOT_SUPPORTED",
+		7: "PAYMENT_LIST_INVALID",
 	}
 	ErrorReason_value = map[string]int32{
 		"ERROR_REASON_UNSPECIFIED":       0,
@@ -53,6 +55,7 @@ var (
 		"PAYMENT_CURRENCY_INVALID":       4,
 		"PAYMENT_ID_INVALID":             5,
 		"PAYMENT_CURRENCY_NOT_SUPPORTED": 6,
+		"PAYMENT_LIST_INVALID":           7,
 	}
 )
 
@@ -239,6 +242,131 @@ func (x *GetPaymentRequest) GetId() string {
 	return ""
 }
 
+type ListPaymentsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Page number, starting at 1. Default 1.
+	Page int32 `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	// Items per page. Default 20, at most 100.
+	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// AIP-160 filter on amount, currency, status, e.g. `currency="USD" AND amount>100`.
+	Filter string `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
+	// AIP-132 order on amount, currency, status, e.g. `amount desc`. Default: newest first.
+	OrderBy       string `protobuf:"bytes,4,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPaymentsRequest) Reset() {
+	*x = ListPaymentsRequest{}
+	mi := &file_payment_v1_payment_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPaymentsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPaymentsRequest) ProtoMessage() {}
+
+func (x *ListPaymentsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_v1_payment_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPaymentsRequest.ProtoReflect.Descriptor instead.
+func (*ListPaymentsRequest) Descriptor() ([]byte, []int) {
+	return file_payment_v1_payment_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ListPaymentsRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListPaymentsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListPaymentsRequest) GetFilter() string {
+	if x != nil {
+		return x.Filter
+	}
+	return ""
+}
+
+func (x *ListPaymentsRequest) GetOrderBy() string {
+	if x != nil {
+		return x.OrderBy
+	}
+	return ""
+}
+
+type ListPaymentsResponse struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Payments []*Payment             `protobuf:"bytes,1,rep,name=payments,proto3" json:"payments,omitempty"`
+	// Number of payments matching the filter, across all pages.
+	TotalSize     int32 `protobuf:"varint,2,opt,name=total_size,json=totalSize,proto3" json:"total_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPaymentsResponse) Reset() {
+	*x = ListPaymentsResponse{}
+	mi := &file_payment_v1_payment_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPaymentsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPaymentsResponse) ProtoMessage() {}
+
+func (x *ListPaymentsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_v1_payment_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPaymentsResponse.ProtoReflect.Descriptor instead.
+func (*ListPaymentsResponse) Descriptor() ([]byte, []int) {
+	return file_payment_v1_payment_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ListPaymentsResponse) GetPayments() []*Payment {
+	if x != nil {
+		return x.Payments
+	}
+	return nil
+}
+
+func (x *ListPaymentsResponse) GetTotalSize() int32 {
+	if x != nil {
+		return x.TotalSize
+	}
+	return 0
+}
+
 var File_payment_v1_payment_proto protoreflect.FileDescriptor
 
 const file_payment_v1_payment_proto_rawDesc = "" +
@@ -253,7 +381,16 @@ const file_payment_v1_payment_proto_rawDesc = "" +
 	"\x14CreatePaymentRequest\x122\n" +
 	"\apayment\x18\x01 \x01(\v2\x13.payment.v1.PaymentB\x03\xe0A\x02R\apayment\"(\n" +
 	"\x11GetPaymentRequest\x12\x13\n" +
-	"\x02id\x18\x01 \x01(\tB\x03\xe0A\x02R\x02id*\xd4\x01\n" +
+	"\x02id\x18\x01 \x01(\tB\x03\xe0A\x02R\x02id\"y\n" +
+	"\x13ListPaymentsRequest\x12\x12\n" +
+	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x16\n" +
+	"\x06filter\x18\x03 \x01(\tR\x06filter\x12\x19\n" +
+	"\border_by\x18\x04 \x01(\tR\aorderBy\"f\n" +
+	"\x14ListPaymentsResponse\x12/\n" +
+	"\bpayments\x18\x01 \x03(\v2\x13.payment.v1.PaymentR\bpayments\x12\x1d\n" +
+	"\n" +
+	"total_size\x18\x02 \x01(\x05R\ttotalSize*\xee\x01\n" +
 	"\vErrorReason\x12\x1c\n" +
 	"\x18ERROR_REASON_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11PAYMENT_NOT_FOUND\x10\x01\x12\x1a\n" +
@@ -261,11 +398,13 @@ const file_payment_v1_payment_proto_rawDesc = "" +
 	"\x16PAYMENT_LIMIT_EXCEEDED\x10\x03\x12\x1c\n" +
 	"\x18PAYMENT_CURRENCY_INVALID\x10\x04\x12\x16\n" +
 	"\x12PAYMENT_ID_INVALID\x10\x05\x12\"\n" +
-	"\x1ePAYMENT_CURRENCY_NOT_SUPPORTED\x10\x062\xd4\x01\n" +
+	"\x1ePAYMENT_CURRENCY_NOT_SUPPORTED\x10\x06\x12\x18\n" +
+	"\x14PAYMENT_LIST_INVALID\x10\a2\xbd\x02\n" +
 	"\x0ePaymentService\x12e\n" +
 	"\rCreatePayment\x12 .payment.v1.CreatePaymentRequest\x1a\x13.payment.v1.Payment\"\x1d\x82\xd3\xe4\x93\x02\x17:\apayment\"\f/v1/payments\x12[\n" +
 	"\n" +
-	"GetPayment\x12\x1d.payment.v1.GetPaymentRequest\x1a\x13.payment.v1.Payment\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/payments/{id}B5Z3github.com/nam3886/kratos-modular/api/payment/v1;v1b\x06proto3"
+	"GetPayment\x12\x1d.payment.v1.GetPaymentRequest\x1a\x13.payment.v1.Payment\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/payments/{id}\x12g\n" +
+	"\fListPayments\x12\x1f.payment.v1.ListPaymentsRequest\x1a .payment.v1.ListPaymentsResponse\"\x14\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/paymentsB5Z3github.com/nam3886/kratos-modular/api/payment/v1;v1b\x06proto3"
 
 var (
 	file_payment_v1_payment_proto_rawDescOnce sync.Once
@@ -280,24 +419,29 @@ func file_payment_v1_payment_proto_rawDescGZIP() []byte {
 }
 
 var file_payment_v1_payment_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_payment_v1_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_payment_v1_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_payment_v1_payment_proto_goTypes = []any{
 	(ErrorReason)(0),             // 0: payment.v1.ErrorReason
 	(*Payment)(nil),              // 1: payment.v1.Payment
 	(*CreatePaymentRequest)(nil), // 2: payment.v1.CreatePaymentRequest
 	(*GetPaymentRequest)(nil),    // 3: payment.v1.GetPaymentRequest
+	(*ListPaymentsRequest)(nil),  // 4: payment.v1.ListPaymentsRequest
+	(*ListPaymentsResponse)(nil), // 5: payment.v1.ListPaymentsResponse
 }
 var file_payment_v1_payment_proto_depIdxs = []int32{
 	1, // 0: payment.v1.CreatePaymentRequest.payment:type_name -> payment.v1.Payment
-	2, // 1: payment.v1.PaymentService.CreatePayment:input_type -> payment.v1.CreatePaymentRequest
-	3, // 2: payment.v1.PaymentService.GetPayment:input_type -> payment.v1.GetPaymentRequest
-	1, // 3: payment.v1.PaymentService.CreatePayment:output_type -> payment.v1.Payment
-	1, // 4: payment.v1.PaymentService.GetPayment:output_type -> payment.v1.Payment
-	3, // [3:5] is the sub-list for method output_type
-	1, // [1:3] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	1, // 1: payment.v1.ListPaymentsResponse.payments:type_name -> payment.v1.Payment
+	2, // 2: payment.v1.PaymentService.CreatePayment:input_type -> payment.v1.CreatePaymentRequest
+	3, // 3: payment.v1.PaymentService.GetPayment:input_type -> payment.v1.GetPaymentRequest
+	4, // 4: payment.v1.PaymentService.ListPayments:input_type -> payment.v1.ListPaymentsRequest
+	1, // 5: payment.v1.PaymentService.CreatePayment:output_type -> payment.v1.Payment
+	1, // 6: payment.v1.PaymentService.GetPayment:output_type -> payment.v1.Payment
+	5, // 7: payment.v1.PaymentService.ListPayments:output_type -> payment.v1.ListPaymentsResponse
+	5, // [5:8] is the sub-list for method output_type
+	2, // [2:5] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_payment_v1_payment_proto_init() }
@@ -311,7 +455,7 @@ func file_payment_v1_payment_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_payment_v1_payment_proto_rawDesc), len(file_payment_v1_payment_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -19,16 +19,19 @@ const _ = http.SupportPackageIsVersion3
 
 const OperationPaymentServiceCreatePayment = "/payment.v1.PaymentService/CreatePayment"
 const OperationPaymentServiceGetPayment = "/payment.v1.PaymentService/GetPayment"
+const OperationPaymentServiceListPayments = "/payment.v1.PaymentService/ListPayments"
 
 type PaymentServiceHTTPServer interface {
 	CreatePayment(context.Context, *CreatePaymentRequest) (*Payment, error)
 	GetPayment(context.Context, *GetPaymentRequest) (*Payment, error)
+	ListPayments(context.Context, *ListPaymentsRequest) (*ListPaymentsResponse, error)
 }
 
 func RegisterPaymentServiceHTTPServer(s *http.Server, srv PaymentServiceHTTPServer) {
 	r := s.Route("/")
 	r.Handle("POST", "/v1/payments", _PaymentService_CreatePayment0_HTTP_Handler(srv))
 	r.Handle("GET", "/v1/payments/{id}", _PaymentService_GetPayment0_HTTP_Handler(srv))
+	r.Handle("GET", "/v1/payments", _PaymentService_ListPayments0_HTTP_Handler(srv))
 }
 
 func _PaymentService_CreatePayment0_HTTP_Handler(srv PaymentServiceHTTPServer) func(ctx http.Context) error {
@@ -75,9 +78,29 @@ func _PaymentService_GetPayment0_HTTP_Handler(srv PaymentServiceHTTPServer) func
 	}
 }
 
+func _PaymentService_ListPayments0_HTTP_Handler(srv PaymentServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListPaymentsRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationPaymentServiceListPayments)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ListPayments(ctx, req.(*ListPaymentsRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ListPaymentsResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
 type PaymentServiceHTTPClient interface {
 	CreatePayment(ctx context.Context, req *CreatePaymentRequest, opts ...http.CallOption) (rsp *Payment, err error)
 	GetPayment(ctx context.Context, req *GetPaymentRequest, opts ...http.CallOption) (rsp *Payment, err error)
+	ListPayments(ctx context.Context, req *ListPaymentsRequest, opts ...http.CallOption) (rsp *ListPaymentsResponse, err error)
 }
 
 type PaymentServiceHTTPClientImpl struct {
@@ -112,6 +135,22 @@ func (c *PaymentServiceHTTPClientImpl) GetPayment(ctx context.Context, in *GetPa
 	opts = append([]http.CallOption{
 		http.Accept("application/protojson"),
 		http.Operation(OperationPaymentServiceGetPayment),
+		http.PathTemplate(pattern),
+	}, opts...)
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *PaymentServiceHTTPClientImpl) ListPayments(ctx context.Context, in *ListPaymentsRequest, opts ...http.CallOption) (*ListPaymentsResponse, error) {
+	var out ListPaymentsResponse
+	pattern := "/v1/payments"
+	path := http.BuildPath(pattern, in, http.WithQueryParams())
+	opts = append([]http.CallOption{
+		http.Accept("application/protojson"),
+		http.Operation(OperationPaymentServiceListPayments),
 		http.PathTemplate(pattern),
 	}, opts...)
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
