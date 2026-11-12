@@ -1,9 +1,10 @@
 syntax = "proto3";
+
 package kratos.api;
 
-option go_package = "github.com/nam3886/kratos-modular/internal/conf;conf";
-
 import "google/protobuf/duration.proto";
+
+option go_package = "github.com/nam3886/kratos-modular/internal/conf;conf";
 
 message Bootstrap {
   Server server = 1;
@@ -15,6 +16,10 @@ message Server {
     string network = 1;
     string addr = 2;
     google.protobuf.Duration timeout = 3;
+    // Origins allowed to call the API from a browser. Empty disables CORS.
+    repeated string cors_allowed_origins = 4;
+    // Largest accepted request body in bytes. Zero means 1 MiB.
+    int64 max_body_bytes = 5;
   }
   message GRPC {
     string network = 1;
@@ -27,22 +32,18 @@ message Server {
 
 message Data {
   message Database {
-    // Driver name registered with database/sql, e.g. "mysql".
+    // Driver name registered with database/sql, e.g. "pgx".
     string driver = 1;
-    // Driver-specific DSN. Keep credentials out of version control.
+    // Driver-specific DSN.
     string source = 2;
     // Log every generated statement. Development only.
     bool debug = 3;
-    // Create or update tables from the ent schema on startup. Leave false in
-    // production and apply migrations as a separate, reviewed step.
-    bool auto_migrate = 4;
+    int32 max_open_conns = 4;
   }
-  message Redis {
-    string network = 1;
-    string addr = 2;
-    google.protobuf.Duration read_timeout = 3;
-    google.protobuf.Duration write_timeout = 4;
+  message RabbitMQ {
+    string url = 1;
   }
-  Database database = 1;
-  Redis redis = 2;
+  // Every database the application connects to, by name.
+  map<string, Database> databases = 1;
+  RabbitMQ rabbitmq = 2;
 }
