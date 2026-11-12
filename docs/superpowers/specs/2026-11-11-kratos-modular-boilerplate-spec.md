@@ -333,7 +333,8 @@ message UpdateSettingRequest {
 enum ErrorReason {
   ERROR_REASON_UNSPECIFIED = 0;
   SETTING_NOT_FOUND = 1;
-  SETTING_INVALID_ARGUMENT = 2;
+  SETTING_CURRENCY_INVALID = 2;
+  SETTING_MAX_AMOUNT_INVALID = 3;
 }
 ```
 
@@ -395,8 +396,11 @@ message GetPaymentRequest {
 enum ErrorReason {
   ERROR_REASON_UNSPECIFIED = 0;
   PAYMENT_NOT_FOUND = 1;
-  PAYMENT_INVALID_ARGUMENT = 2;
+  PAYMENT_AMOUNT_INVALID = 2;
   PAYMENT_LIMIT_EXCEEDED = 3;
+  PAYMENT_CURRENCY_INVALID = 4;
+  PAYMENT_ID_INVALID = 5;
+  PAYMENT_CURRENCY_NOT_SUPPORTED = 6;
 }
 ```
 
@@ -611,7 +615,7 @@ type Consumer interface {
 
 **`http.go`** — `func NewHTTPServer(c *conf.Server, m *Metrics, modules []Registrar) *http.Server`
 
-- Filter (chạy trước khi giải mã): luôn có `bodyLimit(c.Http.MaxBodyBytes)`; thêm `cors(c.Http.CorsAllowedOrigins)` khi danh sách khác rỗng. Truyền bằng `http.Filter(filters...)`.
+- Filter (chạy trước khi giải mã): luôn có `bodyLimit(c.GetHttp().GetMaxBodyBytes())`; thêm `cors(c.GetHttp().GetCorsAllowedOrigins())` khi danh sách khác rỗng. Truyền bằng `http.Filter(filters...)`.
 - Middleware theo thứ tự: `recovery.Recovery()`, `m.middleware` (metrics), `validate.Validator(...)` gọi `fieldbehavior.ValidateRequiredFields(msg)` của `go.einride.tech/aip/fieldbehavior` khi request là `proto.Message`.
 - Áp `Network`, `Address`, `Timeout` từ config khi có giá trị.
 - Sau `http.NewServer(opts...)`: `srv.Handle("/metrics", m.handler)`, rồi gọi `RegisterHTTP` của từng module.
@@ -858,7 +862,8 @@ package ent
 ```go
 var (
 	ErrSettingNotFound        = errors.NotFound(v1.ErrorReason_SETTING_NOT_FOUND.String(), "setting not found")
-	ErrSettingInvalidArgument = errors.BadRequest(v1.ErrorReason_SETTING_INVALID_ARGUMENT.String(), "invalid setting")
+	ErrSettingCurrencyInvalid  = errors.BadRequest(v1.ErrorReason_SETTING_CURRENCY_INVALID.String(), "currency must be a 3-letter code")
+	ErrSettingMaxAmountInvalid = errors.BadRequest(v1.ErrorReason_SETTING_MAX_AMOUNT_INVALID.String(), "max amount must be positive")
 )
 
 type Setting struct {
@@ -878,32 +883,37 @@ func (uc *SettingUsecase) Update(ctx context.Context, s *Setting) (*Setting, err
 ```
 
 - `Get`: viết hoa mã tiền rồi `repo.Find`.
-- `Update`: viết hoa mã tiền; nếu độ dài khác 3 hoặc `MaxAmount <= 0` trả `ErrSettingInvalidArgument`; ngược lại `repo.Save`.
+- `Update`: viết hoa mã tiền; nếu độ dài khác 3 trả `ErrSettingCurrencyInvalid`; nếu `MaxAmount <= 0` trả `ErrSettingMaxAmountInvalid`; ngược lại `repo.Save`.
 
 **`data`**
 
 - `Find`: `ent.IsNotFound(err)` thì trả `biz.ErrSettingNotFound`.
-- `Save`: trong một `inTx`, tạo mới nếu chưa có hoặc cập nhật nếu đã có, rồi phát event:
+- `Save`: trong một `inTx`, tạo mới nếu chưa có hoặc cập nhật nếu đã có, rồi phát event; trả `toBiz(row)` từ dòng vừa ghi:
 
 ```go
 func (r *settingRepo) Save(ctx context.Context, s *biz.Setting) (*biz.Setting, error) {
+	var row *ent.Setting
 	err := r.data.inTx(ctx, func(tx *ent.Tx) error {
 		_, err := tx.Setting.Get(ctx, s.Currency)
 		switch {
 		case ent.IsNotFound(err):
-			err = tx.Setting.Create().SetID(s.Currency).SetMaxAmount(s.MaxAmount).Exec(ctx)
+			row, err = tx.Setting.Create().SetID(s.Currency).SetMaxAmount(s.MaxAmount).Save(ctx)
 		case err == nil:
-			err = tx.Setting.UpdateOneID(s.Currency).SetMaxAmount(s.MaxAmount).Exec(ctx)
+			row, err = tx.Setting.UpdateOneID(s.Currency).SetMaxAmount(s.MaxAmount).Save(ctx)
 		}
 		if err != nil {
 			return err
 		}
-		return mq.Publish(ctx, tx, uuid.NewString(), &v1.SettingChanged{Currency: s.Currency, MaxAmount: s.MaxAmount})
+		return mq.Publish(ctx, tx, uuid.NewV7().String(), &v1.SettingChanged{Currency: s.Currency, MaxAmount: s.MaxAmount})
 	})
 	if err != nil {
 		return nil, err
 	}
-	return s, nil
+	return toBiz(row), nil
+}
+
+func toBiz(row *ent.Setting) *biz.Setting {
+	return &biz.Setting{Currency: row.ID, MaxAmount: row.MaxAmount}
 }
 ```
 
@@ -921,8 +931,10 @@ func (r *settingRepo) Save(ctx context.Context, s *biz.Setting) (*biz.Setting, e
 ```go
 var (
 	ErrPaymentNotFound        = errors.NotFound(v1.ErrorReason_PAYMENT_NOT_FOUND.String(), "payment not found")
-	ErrPaymentInvalidArgument = errors.BadRequest(v1.ErrorReason_PAYMENT_INVALID_ARGUMENT.String(), "invalid payment")
-	ErrCurrencyNotSupported   = errors.BadRequest(v1.ErrorReason_PAYMENT_INVALID_ARGUMENT.String(), "currency is not supported")
+	ErrPaymentAmountInvalid   = errors.BadRequest(v1.ErrorReason_PAYMENT_AMOUNT_INVALID.String(), "amount must be positive")
+	ErrPaymentCurrencyInvalid = errors.BadRequest(v1.ErrorReason_PAYMENT_CURRENCY_INVALID.String(), "currency must be a 3-letter code")
+	ErrPaymentIDInvalid       = errors.BadRequest(v1.ErrorReason_PAYMENT_ID_INVALID.String(), "payment id must be a UUID")
+	ErrCurrencyNotSupported   = errors.BadRequest(v1.ErrorReason_PAYMENT_CURRENCY_NOT_SUPPORTED.String(), "currency is not supported")
 	ErrLimitExceeded          = errors.BadRequest(v1.ErrorReason_PAYMENT_LIMIT_EXCEEDED.String(), "amount exceeds the currency limit")
 )
 
@@ -957,7 +969,7 @@ func (uc *PaymentUsecase) LimitChanged(ctx context.Context, messageID, currency 
 
 Luật của `Create`, theo thứ tự:
 
-1. Viết hoa mã tiền. `amount <= 0` hoặc độ dài mã khác 3 → `ErrPaymentInvalidArgument`.
+1. Viết hoa mã tiền. `amount <= 0` → `ErrPaymentAmountInvalid`; độ dài mã khác 3 → `ErrPaymentCurrencyInvalid`.
 2. `limits.MaxAmount(ctx, currency)`; lỗi thì trả nguyên lỗi đó.
 3. `amount > limit` → `ErrLimitExceeded` (bằng đúng hạn mức vẫn hợp lệ).
 4. `repo.Create` với `ID: uuid.NewV7()`.
@@ -966,12 +978,12 @@ Luật của `Create`, theo thứ tự:
 
 - `payment.go` — `Create` trong một `inTx`: `tx.Payment.Create().SetID(guuid.UUID(p.ID))...Save(ctx)` rồi `mq.Publish(ctx, tx, uuid.NewV7().String(), &v1.PaymentCreated{Id: p.ID.String(), Amount: p.Amount, Currency: p.Currency})`. Chuyển giữa hai kiểu UUID bằng ép kiểu trực tiếp `guuid.UUID(id)` và `uuid.UUID(row.ID)`. `Find`: không thấy thì trả `biz.ErrPaymentNotFound`.
 - `settings_client.go` — `NewLimitReader(settings settingsv1.SettingsServiceServer) biz.LimitReader`. `MaxAmount` gọi `settings.GetSetting(ctx, &settingsv1.GetSettingRequest{Currency: currency})`; `errors.IsNotFound(err)` → `biz.ErrCurrencyNotSupported`; lỗi khác trả nguyên.
-- `limit_change.go` — hằng `consumer = "payment"`:
+- `limit_change.go` — hằng xuất `Consumer = "payment"` khai báo trong `data.go` cạnh `database` (là hậu tố queue AMQP và khóa inbox; đổi tên sẽ giao lại và xử lý lại message cũ):
 
 ```go
 func (r *limitChangeRepo) Record(ctx context.Context, messageID, currency string, maxAmount int64) error {
 	return r.data.inTx(ctx, func(tx *ent.Tx) error {
-		first, err := mq.FirstTime(ctx, tx, consumer, messageID)
+		first, err := mq.FirstTime(ctx, tx, Consumer, messageID)
 		if err != nil || !first {
 			return err
 		}
@@ -984,7 +996,7 @@ func (r *limitChangeRepo) Record(ctx context.Context, messageID, currency string
 
 **`service`**
 
-- `payment.go` — `CreatePayment` gọi `uc.Create(ctx, req.GetPayment().GetAmount(), req.GetPayment().GetCurrency())`. `GetPayment` phân tích id bằng `uuid.Parse`; lỗi → `biz.ErrPaymentInvalidArgument`.
+- `payment.go` — `CreatePayment` gọi `uc.Create(ctx, req.GetPayment().GetAmount(), req.GetPayment().GetCurrency())`. `GetPayment` phân tích id bằng `uuid.Parse`; lỗi → `biz.ErrPaymentIDInvalid`.
 - `setting_events.go` — handler event:
 
 ```go
@@ -1008,7 +1020,7 @@ func (h *SettingEvents) OnSettingChanged(ctx context.Context, msg *message.Messa
 
 ```go
 func (m *Module) RegisterConsumers(q *mq.MQ) error {
-	return q.Handle("payment", mq.Topic(&settingsv1.SettingChanged{}), m.events.OnSettingChanged)
+	return q.Handle(data.Consumer, mq.Topic(&settingsv1.SettingChanged{}), m.events.OnSettingChanged)
 }
 ```
 
@@ -1081,7 +1093,7 @@ Thứ tự khởi tạo Wire sinh ra: `db.Open` → `settings.New` → `settings
 **Thêm một module mới** là bốn việc (ghi vào README):
 
 1. Viết `api/<tên>/v1/*.proto`, chạy `make api`.
-2. Chép `internal/module/settings` (hoặc `payment` nếu có consumer) thành `internal/module/<tên>` và thay nội dung.
+2. Chép `internal/module/settings` (hoặc `payment` nếu có consumer) thành `internal/module/<tên>` và thay nội dung; module có consumer phải đổi `data.Consumer` (trong `data.go`) thành tên của module.
 3. Thêm module vào `cmd/server/wire.go` và `cmd/server/modules.go`, chạy `make ent wire`.
 4. `make migration module=<tên> name=<tên>_init`, rồi `make migrate`.
 
@@ -1223,7 +1235,7 @@ Dùng gì thì test bằng cái đó: test tầng `data` và test tích hợp ch
 `internal/module/settings/internal/biz/setting_test.go`
 
 - `TestUpdateThenGet`: cập nhật `usd`/1000, đọc lại bằng `Usd` được `USD`/1000; đọc `EUR` trả `ErrSettingNotFound`.
-- `TestUpdateRejectsInvalidSettings`: mã `US`, hạn mức 0, hạn mức âm đều trả `ErrSettingInvalidArgument`.
+- `TestUpdateRejectsInvalidSettings`: mã `US`, hạn mức 0, hạn mức âm trả `ErrSettingCurrencyInvalid` (mã `US`) hoặc `ErrSettingMaxAmountInvalid` (hạn mức 0 và âm).
 
 `internal/module/settings/internal/data/setting_test.go`
 
@@ -1231,12 +1243,12 @@ Dùng gì thì test bằng cái đó: test tầng `data` và test tích hợp ch
 
 `internal/module/payment/internal/biz/payment_test.go`
 
-- `TestCreate` dạng bảng, hạn mức USD = 1000: 500/`usd` hợp lệ; 1000 hợp lệ; 1001 → `ErrLimitExceeded`; `EUR` → `ErrCurrencyNotSupported`; số tiền 0 → `ErrPaymentInvalidArgument`; mã `US` → `ErrPaymentInvalidArgument`. Trường hợp lỗi không được lưu gì; trường hợp hợp lệ có mã tiền viết hoa và ID khác `uuid.Nil()`.
+- `TestCreate` dạng bảng, hạn mức USD = 1000: 500/`usd` hợp lệ; 1000 hợp lệ; 1001 → `ErrLimitExceeded`; `EUR` → `ErrCurrencyNotSupported`; số tiền 0 → `ErrPaymentAmountInvalid`; mã `US` → `ErrPaymentCurrencyInvalid`. Trường hợp lỗi không được lưu gì; trường hợp hợp lệ có mã tiền viết hoa và ID khác `uuid.Nil()`.
 
 `internal/module/payment/internal/service/payment_test.go`
 
 - `TestCreateThenGet`: tạo rồi đọc lại, mã tiền `USD`, trạng thái `pending`.
-- `TestErrorsCarryTheAPIReason`: vượt hạn mức có `errors.Reason(err) == "PAYMENT_LIMIT_EXCEEDED"` và `errors.Code(err) == 400`; id không phải UUID có reason `PAYMENT_INVALID_ARGUMENT`; id không tồn tại thỏa `errors.IsNotFound`.
+- `TestErrorsCarryTheAPIReason`: vượt hạn mức có `errors.Reason(err) == "PAYMENT_LIMIT_EXCEEDED"` và `errors.Code(err) == 400`; id không phải UUID có reason `PAYMENT_ID_INVALID`; id không tồn tại thỏa `errors.IsNotFound`.
 
 `internal/module/payment/internal/data/payment_test.go`
 

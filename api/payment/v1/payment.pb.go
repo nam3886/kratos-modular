@@ -25,10 +25,13 @@ const (
 type ErrorReason int32
 
 const (
-	ErrorReason_ERROR_REASON_UNSPECIFIED ErrorReason = 0
-	ErrorReason_PAYMENT_NOT_FOUND        ErrorReason = 1
-	ErrorReason_PAYMENT_INVALID_ARGUMENT ErrorReason = 2
-	ErrorReason_PAYMENT_LIMIT_EXCEEDED   ErrorReason = 3
+	ErrorReason_ERROR_REASON_UNSPECIFIED       ErrorReason = 0
+	ErrorReason_PAYMENT_NOT_FOUND              ErrorReason = 1
+	ErrorReason_PAYMENT_AMOUNT_INVALID         ErrorReason = 2
+	ErrorReason_PAYMENT_LIMIT_EXCEEDED         ErrorReason = 3
+	ErrorReason_PAYMENT_CURRENCY_INVALID       ErrorReason = 4
+	ErrorReason_PAYMENT_ID_INVALID             ErrorReason = 5
+	ErrorReason_PAYMENT_CURRENCY_NOT_SUPPORTED ErrorReason = 6
 )
 
 // Enum value maps for ErrorReason.
@@ -36,14 +39,20 @@ var (
 	ErrorReason_name = map[int32]string{
 		0: "ERROR_REASON_UNSPECIFIED",
 		1: "PAYMENT_NOT_FOUND",
-		2: "PAYMENT_INVALID_ARGUMENT",
+		2: "PAYMENT_AMOUNT_INVALID",
 		3: "PAYMENT_LIMIT_EXCEEDED",
+		4: "PAYMENT_CURRENCY_INVALID",
+		5: "PAYMENT_ID_INVALID",
+		6: "PAYMENT_CURRENCY_NOT_SUPPORTED",
 	}
 	ErrorReason_value = map[string]int32{
-		"ERROR_REASON_UNSPECIFIED": 0,
-		"PAYMENT_NOT_FOUND":        1,
-		"PAYMENT_INVALID_ARGUMENT": 2,
-		"PAYMENT_LIMIT_EXCEEDED":   3,
+		"ERROR_REASON_UNSPECIFIED":       0,
+		"PAYMENT_NOT_FOUND":              1,
+		"PAYMENT_AMOUNT_INVALID":         2,
+		"PAYMENT_LIMIT_EXCEEDED":         3,
+		"PAYMENT_CURRENCY_INVALID":       4,
+		"PAYMENT_ID_INVALID":             5,
+		"PAYMENT_CURRENCY_NOT_SUPPORTED": 6,
 	}
 )
 
@@ -244,12 +253,15 @@ const file_payment_v1_payment_proto_rawDesc = "" +
 	"\x14CreatePaymentRequest\x122\n" +
 	"\apayment\x18\x01 \x01(\v2\x13.payment.v1.PaymentB\x03\xe0A\x02R\apayment\"(\n" +
 	"\x11GetPaymentRequest\x12\x13\n" +
-	"\x02id\x18\x01 \x01(\tB\x03\xe0A\x02R\x02id*|\n" +
+	"\x02id\x18\x01 \x01(\tB\x03\xe0A\x02R\x02id*\xd4\x01\n" +
 	"\vErrorReason\x12\x1c\n" +
 	"\x18ERROR_REASON_UNSPECIFIED\x10\x00\x12\x15\n" +
-	"\x11PAYMENT_NOT_FOUND\x10\x01\x12\x1c\n" +
-	"\x18PAYMENT_INVALID_ARGUMENT\x10\x02\x12\x1a\n" +
-	"\x16PAYMENT_LIMIT_EXCEEDED\x10\x032\xd4\x01\n" +
+	"\x11PAYMENT_NOT_FOUND\x10\x01\x12\x1a\n" +
+	"\x16PAYMENT_AMOUNT_INVALID\x10\x02\x12\x1a\n" +
+	"\x16PAYMENT_LIMIT_EXCEEDED\x10\x03\x12\x1c\n" +
+	"\x18PAYMENT_CURRENCY_INVALID\x10\x04\x12\x16\n" +
+	"\x12PAYMENT_ID_INVALID\x10\x05\x12\"\n" +
+	"\x1ePAYMENT_CURRENCY_NOT_SUPPORTED\x10\x062\xd4\x01\n" +
 	"\x0ePaymentService\x12e\n" +
 	"\rCreatePayment\x12 .payment.v1.CreatePaymentRequest\x1a\x13.payment.v1.Payment\"\x1d\x82\xd3\xe4\x93\x02\x17:\apayment\"\f/v1/payments\x12[\n" +
 	"\n" +

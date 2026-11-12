@@ -38,8 +38,8 @@ func TestCreate(t *testing.T) {
 		{"at limit", 1000, "USD", nil},
 		{"over limit", 1001, "USD", ErrLimitExceeded},
 		{"currency without setting", 5, "EUR", ErrCurrencyNotSupported},
-		{"zero amount", 0, "USD", ErrPaymentInvalidArgument},
-		{"bad currency", 5, "US", ErrPaymentInvalidArgument},
+		{"zero amount", 0, "USD", ErrPaymentAmountInvalid},
+		{"bad currency", 5, "US", ErrPaymentCurrencyInvalid},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

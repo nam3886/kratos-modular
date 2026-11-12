@@ -84,7 +84,8 @@ internal/module/<module>/
 
 1. Write `api/<name>/v1/*.proto`, then `make api`.
 2. Copy `internal/module/settings` (or `payment` if it consumes events) to
-   `internal/module/<name>` and replace its contents.
+   `internal/module/<name>` and replace its contents; a module with consumers
+   must also rename `data.Consumer` in its `data.go`.
 3. Add the module to `cmd/server/wire.go` and `cmd/server/modules.go`, then
    `make ent wire`.
 4. `make migration module=<name> name=<name>_init`, then `make migrate`.

@@ -29,7 +29,7 @@ func (s *PaymentService) CreatePayment(ctx context.Context, req *v1.CreatePaymen
 func (s *PaymentService) GetPayment(ctx context.Context, req *v1.GetPaymentRequest) (*v1.Payment, error) {
 	id, err := uuid.Parse(req.GetId())
 	if err != nil {
-		return nil, biz.ErrPaymentInvalidArgument
+		return nil, biz.ErrPaymentIDInvalid
 	}
 	p, err := s.uc.Get(ctx, id)
 	if err != nil {

@@ -41,13 +41,16 @@ func TestUpdateThenGet(t *testing.T) {
 
 func TestUpdateRejectsInvalidSettings(t *testing.T) {
 	uc := NewSettingUsecase(&fakeRepo{saved: map[string]*Setting{}})
-	for _, s := range []*Setting{
-		{Currency: "US", MaxAmount: 10},
-		{Currency: "USD", MaxAmount: 0},
-		{Currency: "USD", MaxAmount: -5},
+	for _, c := range []struct {
+		s    *Setting
+		want error
+	}{
+		{&Setting{Currency: "US", MaxAmount: 10}, ErrSettingCurrencyInvalid},
+		{&Setting{Currency: "USD", MaxAmount: 0}, ErrSettingMaxAmountInvalid},
+		{&Setting{Currency: "USD", MaxAmount: -5}, ErrSettingMaxAmountInvalid},
 	} {
-		if _, err := uc.Update(context.Background(), s); !errors.Is(err, ErrSettingInvalidArgument) {
-			t.Errorf("%+v: err = %v", s, err)
+		if _, err := uc.Update(context.Background(), c.s); !errors.Is(err, c.want) {
+			t.Errorf("%+v: err = %v, want %v", c.s, err, c.want)
 		}
 	}
 }

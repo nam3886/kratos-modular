@@ -11,18 +11,18 @@ import (
 	"github.com/go-kratos/kratos/v3/errors"
 )
 
-type memRepo struct {
+type fakeRepo struct {
 	biz.PaymentRepo
 	byID map[uuid.UUID]*biz.Payment
 }
 
-func (r *memRepo) Create(_ context.Context, p *biz.Payment) (*biz.Payment, error) {
+func (r *fakeRepo) Create(_ context.Context, p *biz.Payment) (*biz.Payment, error) {
 	p.Status = "pending"
 	r.byID[p.ID] = p
 	return p, nil
 }
 
-func (r *memRepo) Find(_ context.Context, id uuid.UUID) (*biz.Payment, error) {
+func (r *fakeRepo) Find(_ context.Context, id uuid.UUID) (*biz.Payment, error) {
 	p, ok := r.byID[id]
 	if !ok {
 		return nil, biz.ErrPaymentNotFound
@@ -35,7 +35,7 @@ type limits int64
 func (l limits) MaxAmount(context.Context, string) (int64, error) { return int64(l), nil }
 
 func newService() *PaymentService {
-	return NewPaymentService(biz.NewPaymentUsecase(&memRepo{byID: map[uuid.UUID]*biz.Payment{}}, limits(1000), nil))
+	return NewPaymentService(biz.NewPaymentUsecase(&fakeRepo{byID: map[uuid.UUID]*biz.Payment{}}, limits(1000), nil))
 }
 
 func TestCreateThenGet(t *testing.T) {
@@ -62,7 +62,7 @@ func TestErrorsCarryTheAPIReason(t *testing.T) {
 		t.Fatalf("over limit: reason=%q code=%d", errors.Reason(err), errors.Code(err))
 	}
 	_, err = s.GetPayment(ctx, &v1.GetPaymentRequest{Id: "not-a-uuid"})
-	if errors.Reason(err) != v1.ErrorReason_PAYMENT_INVALID_ARGUMENT.String() {
+	if errors.Reason(err) != v1.ErrorReason_PAYMENT_ID_INVALID.String() {
 		t.Fatalf("bad id: reason=%q", errors.Reason(err))
 	}
 	_, err = s.GetPayment(ctx, &v1.GetPaymentRequest{Id: uuid.NewV7().String()})

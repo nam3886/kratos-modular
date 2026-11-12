@@ -8,9 +8,6 @@ import (
 	"github.com/nam3886/kratos-modular/internal/platform/mq"
 )
 
-// consumer is this module's name in the inbox and its queue suffix.
-const consumer = "payment"
-
 type limitChangeRepo struct {
 	data *Data
 }
@@ -23,7 +20,7 @@ func NewLimitChangeRepo(data *Data) biz.LimitChangeRepo {
 // commit together, so a redelivered message changes nothing.
 func (r *limitChangeRepo) Record(ctx context.Context, messageID, currency string, maxAmount int64) error {
 	return r.data.inTx(ctx, func(tx *ent.Tx) error {
-		first, err := mq.FirstTime(ctx, tx, consumer, messageID)
+		first, err := mq.FirstTime(ctx, tx, Consumer, messageID)
 		if err != nil || !first {
 			return err
 		}

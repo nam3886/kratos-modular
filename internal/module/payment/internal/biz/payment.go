@@ -12,8 +12,10 @@ import (
 
 var (
 	ErrPaymentNotFound        = errors.NotFound(v1.ErrorReason_PAYMENT_NOT_FOUND.String(), "payment not found")
-	ErrPaymentInvalidArgument = errors.BadRequest(v1.ErrorReason_PAYMENT_INVALID_ARGUMENT.String(), "invalid payment")
-	ErrCurrencyNotSupported   = errors.BadRequest(v1.ErrorReason_PAYMENT_INVALID_ARGUMENT.String(), "currency is not supported")
+	ErrPaymentAmountInvalid   = errors.BadRequest(v1.ErrorReason_PAYMENT_AMOUNT_INVALID.String(), "amount must be positive")
+	ErrPaymentCurrencyInvalid = errors.BadRequest(v1.ErrorReason_PAYMENT_CURRENCY_INVALID.String(), "currency must be a 3-letter code")
+	ErrPaymentIDInvalid       = errors.BadRequest(v1.ErrorReason_PAYMENT_ID_INVALID.String(), "payment id must be a UUID")
+	ErrCurrencyNotSupported   = errors.BadRequest(v1.ErrorReason_PAYMENT_CURRENCY_NOT_SUPPORTED.String(), "currency is not supported")
 	ErrLimitExceeded          = errors.BadRequest(v1.ErrorReason_PAYMENT_LIMIT_EXCEEDED.String(), "amount exceeds the currency limit")
 )
 
@@ -52,8 +54,11 @@ func NewPaymentUsecase(repo PaymentRepo, limits LimitReader, changes LimitChange
 
 func (uc *PaymentUsecase) Create(ctx context.Context, amount int64, currency string) (*Payment, error) {
 	currency = strings.ToUpper(currency)
-	if amount <= 0 || len(currency) != 3 {
-		return nil, ErrPaymentInvalidArgument
+	if amount <= 0 {
+		return nil, ErrPaymentAmountInvalid
+	}
+	if len(currency) != 3 {
+		return nil, ErrPaymentCurrencyInvalid
 	}
 	limit, err := uc.limits.MaxAmount(ctx, currency)
 	if err != nil {

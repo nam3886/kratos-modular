@@ -25,9 +25,10 @@ const (
 type ErrorReason int32
 
 const (
-	ErrorReason_ERROR_REASON_UNSPECIFIED ErrorReason = 0
-	ErrorReason_SETTING_NOT_FOUND        ErrorReason = 1
-	ErrorReason_SETTING_INVALID_ARGUMENT ErrorReason = 2
+	ErrorReason_ERROR_REASON_UNSPECIFIED   ErrorReason = 0
+	ErrorReason_SETTING_NOT_FOUND          ErrorReason = 1
+	ErrorReason_SETTING_CURRENCY_INVALID   ErrorReason = 2
+	ErrorReason_SETTING_MAX_AMOUNT_INVALID ErrorReason = 3
 )
 
 // Enum value maps for ErrorReason.
@@ -35,12 +36,14 @@ var (
 	ErrorReason_name = map[int32]string{
 		0: "ERROR_REASON_UNSPECIFIED",
 		1: "SETTING_NOT_FOUND",
-		2: "SETTING_INVALID_ARGUMENT",
+		2: "SETTING_CURRENCY_INVALID",
+		3: "SETTING_MAX_AMOUNT_INVALID",
 	}
 	ErrorReason_value = map[string]int32{
-		"ERROR_REASON_UNSPECIFIED": 0,
-		"SETTING_NOT_FOUND":        1,
-		"SETTING_INVALID_ARGUMENT": 2,
+		"ERROR_REASON_UNSPECIFIED":   0,
+		"SETTING_NOT_FOUND":          1,
+		"SETTING_CURRENCY_INVALID":   2,
+		"SETTING_MAX_AMOUNT_INVALID": 3,
 	}
 )
 
@@ -223,11 +226,12 @@ const file_settings_v1_settings_proto_rawDesc = "" +
 	"\x11GetSettingRequest\x12\x1f\n" +
 	"\bcurrency\x18\x01 \x01(\tB\x03\xe0A\x02R\bcurrency\"K\n" +
 	"\x14UpdateSettingRequest\x123\n" +
-	"\asetting\x18\x01 \x01(\v2\x14.settings.v1.SettingB\x03\xe0A\x02R\asetting*`\n" +
+	"\asetting\x18\x01 \x01(\v2\x14.settings.v1.SettingB\x03\xe0A\x02R\asetting*\x80\x01\n" +
 	"\vErrorReason\x12\x1c\n" +
 	"\x18ERROR_REASON_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11SETTING_NOT_FOUND\x10\x01\x12\x1c\n" +
-	"\x18SETTING_INVALID_ARGUMENT\x10\x022\xf2\x01\n" +
+	"\x18SETTING_CURRENCY_INVALID\x10\x02\x12\x1e\n" +
+	"\x1aSETTING_MAX_AMOUNT_INVALID\x10\x032\xf2\x01\n" +
 	"\x0fSettingsService\x12c\n" +
 	"\n" +
 	"GetSetting\x12\x1e.settings.v1.GetSettingRequest\x1a\x14.settings.v1.Setting\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/settings/{currency}\x12z\n" +

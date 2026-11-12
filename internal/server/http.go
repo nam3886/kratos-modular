@@ -13,9 +13,9 @@ import (
 // NewHTTPServer new an HTTP server, mounts every module on it and serves
 // the metrics at /metrics.
 func NewHTTPServer(c *conf.Server, m *Metrics, modules []Registrar) *http.Server {
-	filters := []http.FilterFunc{bodyLimit(c.Http.MaxBodyBytes)}
-	if len(c.Http.CorsAllowedOrigins) > 0 {
-		filters = append(filters, cors(c.Http.CorsAllowedOrigins))
+	filters := []http.FilterFunc{bodyLimit(c.GetHttp().GetMaxBodyBytes())}
+	if len(c.GetHttp().GetCorsAllowedOrigins()) > 0 {
+		filters = append(filters, cors(c.GetHttp().GetCorsAllowedOrigins()))
 	}
 	var opts = []http.ServerOption{
 		http.Filter(filters...),
@@ -30,14 +30,14 @@ func NewHTTPServer(c *conf.Server, m *Metrics, modules []Registrar) *http.Server
 			}),
 		),
 	}
-	if c.Http.Network != "" {
-		opts = append(opts, http.Network(c.Http.Network))
+	if c.GetHttp().GetNetwork() != "" {
+		opts = append(opts, http.Network(c.GetHttp().GetNetwork()))
 	}
-	if c.Http.Addr != "" {
-		opts = append(opts, http.Address(c.Http.Addr))
+	if c.GetHttp().GetAddr() != "" {
+		opts = append(opts, http.Address(c.GetHttp().GetAddr()))
 	}
-	if c.Http.Timeout != nil {
-		opts = append(opts, http.Timeout(c.Http.Timeout.AsDuration()))
+	if c.GetHttp().GetTimeout() != nil {
+		opts = append(opts, http.Timeout(c.GetHttp().GetTimeout().AsDuration()))
 	}
 	srv := http.NewServer(opts...)
 	srv.Handle("/metrics", m.handler)

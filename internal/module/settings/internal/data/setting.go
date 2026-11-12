@@ -26,18 +26,19 @@ func (r *settingRepo) Find(ctx context.Context, currency string) (*biz.Setting, 
 	if err != nil {
 		return nil, err
 	}
-	return &biz.Setting{Currency: row.ID, MaxAmount: row.MaxAmount}, nil
+	return toBiz(row), nil
 }
 
 // Save stores the setting and its SettingChanged event in one transaction.
 func (r *settingRepo) Save(ctx context.Context, s *biz.Setting) (*biz.Setting, error) {
+	var row *ent.Setting
 	err := r.data.inTx(ctx, func(tx *ent.Tx) error {
 		_, err := tx.Setting.Get(ctx, s.Currency)
 		switch {
 		case ent.IsNotFound(err):
-			err = tx.Setting.Create().SetID(s.Currency).SetMaxAmount(s.MaxAmount).Exec(ctx)
+			row, err = tx.Setting.Create().SetID(s.Currency).SetMaxAmount(s.MaxAmount).Save(ctx)
 		case err == nil:
-			err = tx.Setting.UpdateOneID(s.Currency).SetMaxAmount(s.MaxAmount).Exec(ctx)
+			row, err = tx.Setting.UpdateOneID(s.Currency).SetMaxAmount(s.MaxAmount).Save(ctx)
 		}
 		if err != nil {
 			return err
@@ -47,5 +48,9 @@ func (r *settingRepo) Save(ctx context.Context, s *biz.Setting) (*biz.Setting, e
 	if err != nil {
 		return nil, err
 	}
-	return s, nil
+	return toBiz(row), nil
+}
+
+func toBiz(row *ent.Setting) *biz.Setting {
+	return &biz.Setting{Currency: row.ID, MaxAmount: row.MaxAmount}
 }

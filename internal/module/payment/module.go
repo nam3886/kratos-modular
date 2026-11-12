@@ -8,6 +8,7 @@ import (
 
 	v1 "github.com/nam3886/kratos-modular/api/payment/v1"
 	settingsv1 "github.com/nam3886/kratos-modular/api/settings/v1"
+	"github.com/nam3886/kratos-modular/internal/module/payment/internal/data"
 	"github.com/nam3886/kratos-modular/internal/module/payment/internal/service"
 	"github.com/nam3886/kratos-modular/internal/platform/mq"
 )
@@ -26,5 +27,5 @@ func (m *Module) RegisterHTTP(srv *http.Server) { v1.RegisterPaymentServiceHTTPS
 func (m *Module) RegisterGRPC(srv *grpc.Server) { v1.RegisterPaymentServiceServer(srv, m.svc) }
 
 func (m *Module) RegisterConsumers(q *mq.MQ) error {
-	return q.Handle("payment", mq.Topic(&settingsv1.SettingChanged{}), m.events.OnSettingChanged)
+	return q.Handle(data.Consumer, mq.Topic(&settingsv1.SettingChanged{}), m.events.OnSettingChanged)
 }

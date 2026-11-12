@@ -22,7 +22,7 @@ func (s *SettingsService) GetSetting(ctx context.Context, req *v1.GetSettingRequ
 	if err != nil {
 		return nil, err
 	}
-	return &v1.Setting{Currency: got.Currency, MaxAmount: got.MaxAmount}, nil
+	return reply(got), nil
 }
 
 func (s *SettingsService) UpdateSetting(ctx context.Context, req *v1.UpdateSettingRequest) (*v1.Setting, error) {
@@ -30,5 +30,9 @@ func (s *SettingsService) UpdateSetting(ctx context.Context, req *v1.UpdateSetti
 	if err != nil {
 		return nil, err
 	}
-	return &v1.Setting{Currency: got.Currency, MaxAmount: got.MaxAmount}, nil
+	return reply(got), nil
+}
+
+func reply(s *biz.Setting) *v1.Setting {
+	return &v1.Setting{Currency: s.Currency, MaxAmount: s.MaxAmount}
 }

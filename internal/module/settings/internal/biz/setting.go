@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	ErrSettingNotFound        = errors.NotFound(v1.ErrorReason_SETTING_NOT_FOUND.String(), "setting not found")
-	ErrSettingInvalidArgument = errors.BadRequest(v1.ErrorReason_SETTING_INVALID_ARGUMENT.String(), "invalid setting")
+	ErrSettingNotFound         = errors.NotFound(v1.ErrorReason_SETTING_NOT_FOUND.String(), "setting not found")
+	ErrSettingCurrencyInvalid  = errors.BadRequest(v1.ErrorReason_SETTING_CURRENCY_INVALID.String(), "currency must be a 3-letter code")
+	ErrSettingMaxAmountInvalid = errors.BadRequest(v1.ErrorReason_SETTING_MAX_AMOUNT_INVALID.String(), "max amount must be positive")
 )
 
 type Setting struct {
@@ -39,8 +40,11 @@ func (uc *SettingUsecase) Get(ctx context.Context, currency string) (*Setting, e
 
 func (uc *SettingUsecase) Update(ctx context.Context, s *Setting) (*Setting, error) {
 	s.Currency = strings.ToUpper(s.Currency)
-	if len(s.Currency) != 3 || s.MaxAmount <= 0 {
-		return nil, ErrSettingInvalidArgument
+	if len(s.Currency) != 3 {
+		return nil, ErrSettingCurrencyInvalid
+	}
+	if s.MaxAmount <= 0 {
+		return nil, ErrSettingMaxAmountInvalid
 	}
 	return uc.repo.Save(ctx, s)
 }

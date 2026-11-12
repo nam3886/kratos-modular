@@ -16,6 +16,11 @@ import (
 // database is the name of the configured database this module stores into.
 const database = "main"
 
+// Consumer names this module as an event consumer: it is the AMQP queue
+// suffix and the inbox dedupe key. Renaming it re-delivers and re-processes
+// old messages.
+const Consumer = "payment"
+
 var ProviderSet = wire.NewSet(NewData, NewPaymentRepo, NewLimitChangeRepo, NewLimitReader)
 
 // Data holds the module's ent client. The client runs on the shared pool of
